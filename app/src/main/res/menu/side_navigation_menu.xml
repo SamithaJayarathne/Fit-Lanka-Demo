@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/side_nav_home"
+        android:title="Home"
+        android:icon="@drawable/ic_home_outlined"
+        />
+    <group>
+        <item
+            android:id="@+id/side_nav_profile"
+            android:title="My Profile"
+            android:icon="@drawable/profile_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_wallet"
+            android:title="Wallet"
+            android:icon="@drawable/wallet_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_workout_history"
+            android:title="Workout History"
+            android:icon="@drawable/history_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_achievements"
+            android:title="Achievements"
+            android:icon="@drawable/trophy_24px"
+            />
+    </group>
+
+    <group>
+        <item
+            android:id="@+id/side_nav_orders"
+            android:title="My Orders"
+            android:icon="@drawable/format_list_bulleted_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_cart"
+            android:title="Cart"
+            android:icon="@drawable/shopping_cart_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_wishlist"
+            android:title="Wishlist"
+            android:icon="@drawable/favorite_24px"
+            />
+    </group>
+
+    <group>
+        <item
+            android:id="@+id/side_nav_leaderboard"
+            android:title="Leaderboard"
+            android:icon="@drawable/ic_leaderboard_outlined"
+            />
+        <item
+            android:id="@+id/side_nav_challenges"
+            android:title="Challenges"
+            android:icon="@drawable/editor_choice_24px"
+            />
+
+        <item
+            android:id="@+id/side_nav_settings"
+            android:title="Settings"
+            android:icon="@drawable/settings_24px"
+            />
+    </group>
+
+    <item
+        android:id="@+id/side_nav_workout"
+        android:title="Workouts"
+        android:icon="@drawable/ic_workout"
+        />
+    <item
+        android:id="@+id/side_nav_shop"
+        android:title="Shop"
+        android:icon="@drawable/ic_market_outlined"
+        />
+
+    <group>
+        <item
+            android:id="@+id/side_nav_login"
+            android:title="Login"
+            android:icon="@drawable/login_24px"
+            /> <item
+            android:id="@+id/side_nav_logout"
+            android:title="Logout"
+            android:icon="@drawable/logout_24px"
+            />
+    </group>
+
+</menu>
