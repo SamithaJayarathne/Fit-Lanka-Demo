@@ -3,95 +3,96 @@
 
     <item
         android:id="@+id/side_nav_home"
-        android:title="Home"
+        android:checkable="true"
         android:icon="@drawable/ic_home_outlined"
-        />
+        android:title="Home" />
     <group>
         <item
             android:id="@+id/side_nav_profile"
-            android:title="My Profile"
+            android:checkable="true"
             android:icon="@drawable/profile_24px"
-            />
+            android:title="My Profile" />
 
         <item
             android:id="@+id/side_nav_wallet"
-            android:title="Wallet"
+            android:checkable="true"
             android:icon="@drawable/wallet_24px"
-            />
+            android:title="Wallet" />
 
         <item
             android:id="@+id/side_nav_workout_history"
-            android:title="Workout History"
+            android:checkable="true"
             android:icon="@drawable/history_24px"
-            />
+            android:title="Workout History" />
 
         <item
             android:id="@+id/side_nav_achievements"
-            android:title="Achievements"
+            android:checkable="true"
             android:icon="@drawable/trophy_24px"
-            />
+            android:title="Achievements" />
     </group>
 
     <group>
         <item
             android:id="@+id/side_nav_orders"
-            android:title="My Orders"
+            android:checkable="true"
             android:icon="@drawable/format_list_bulleted_24px"
-            />
+            android:title="My Orders" />
 
         <item
             android:id="@+id/side_nav_cart"
-            android:title="Cart"
+            android:checkable="true"
             android:icon="@drawable/shopping_cart_24px"
-            />
+            android:title="Cart" />
 
         <item
             android:id="@+id/side_nav_wishlist"
-            android:title="Wishlist"
+            android:checkable="true"
             android:icon="@drawable/favorite_24px"
-            />
+            android:title="Wishlist" />
     </group>
 
     <group>
         <item
             android:id="@+id/side_nav_leaderboard"
-            android:title="Leaderboard"
+            android:checkable="true"
             android:icon="@drawable/ic_leaderboard_outlined"
-            />
+            android:title="Leaderboard" />
         <item
             android:id="@+id/side_nav_challenges"
-            android:title="Challenges"
+            android:checkable="true"
             android:icon="@drawable/editor_choice_24px"
-            />
+            android:title="Challenges" />
 
         <item
             android:id="@+id/side_nav_settings"
-            android:title="Settings"
+            android:checkable="true"
             android:icon="@drawable/settings_24px"
-            />
+            android:title="Settings" />
     </group>
 
     <item
         android:id="@+id/side_nav_workout"
-        android:title="Workouts"
+        android:checkable="true"
         android:icon="@drawable/ic_workout"
-        />
+        android:title="Workouts" />
     <item
         android:id="@+id/side_nav_shop"
-        android:title="Shop"
+        android:checkable="true"
         android:icon="@drawable/ic_market_outlined"
-        />
+        android:title="Shop" />
 
     <group>
         <item
             android:id="@+id/side_nav_login"
-            android:title="Login"
+            android:checkable="true"
             android:icon="@drawable/login_24px"
-            /> <item
+            android:title="Login" />
+        <item
             android:id="@+id/side_nav_logout"
-            android:title="Logout"
+            android:checkable="true"
             android:icon="@drawable/logout_24px"
-            />
+            android:title="Logout" />
     </group>
 
 </menu>

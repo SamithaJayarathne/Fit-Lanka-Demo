@@ -19,6 +19,14 @@
             android:orientation="vertical"
             android:padding="24dp">
 
+            <ImageView
+                android:id="@+id/appLogoImg"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/app_logo"
+                android:scaleType="fitCenter" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -60,7 +68,7 @@
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusTopStart="16dp"
-                        app:startIconDrawable="@android:drawable/ic_menu_edit"
+                        app:startIconDrawable="@drawable/profile_24px"
                         app:startIconTint="@color/md_theme_tertiary">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -80,7 +88,7 @@
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusTopStart="16dp"
-                        app:startIconDrawable="@android:drawable/ic_dialog_email"
+                        app:startIconDrawable="@drawable/alternate_email_24px"
                         app:startIconTint="@color/md_theme_tertiary">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -100,7 +108,7 @@
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusTopStart="16dp"
-                        app:startIconDrawable="@android:drawable/ic_menu_call"
+                        app:startIconDrawable="@drawable/call_24px"
                         app:startIconTint="@color/md_theme_tertiary">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -122,7 +130,7 @@
                         app:boxCornerRadiusBottomStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusTopStart="16dp"
-                        app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                        app:startIconDrawable="@drawable/encrypted_24px"
                         app:startIconTint="@color/md_theme_tertiary">
 
                         <com.google.android.material.textfield.TextInputEditText

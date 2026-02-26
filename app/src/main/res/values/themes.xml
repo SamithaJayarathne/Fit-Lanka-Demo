@@ -50,4 +50,10 @@
         <item name="background">@drawable/lightbg</item>
 
     </style>
+
+    <style name="CircleImage">
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>
+
+
