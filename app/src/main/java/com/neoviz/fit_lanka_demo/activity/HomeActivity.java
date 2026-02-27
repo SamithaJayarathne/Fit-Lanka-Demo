@@ -49,6 +49,8 @@ public class HomeActivity extends AppCompatActivity implements
         binding = ActivityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        loadFragment(new HomeFragment());
+
         drawerLayout = binding.drawerLayout;
         navigationView = binding.sideNavigationView;
         bottomNavigationView = binding.bottomNavigationView;
