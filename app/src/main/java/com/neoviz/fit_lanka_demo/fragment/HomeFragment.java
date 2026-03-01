@@ -43,7 +43,6 @@ public class HomeFragment extends Fragment implements SensorEventListener {
     private static final String DAILY_STEP_TARGET_KEY = "dailyStepTarget";
     private static final Double METER_PER_STEP = 0.762;
     private static final Double CALORIES_PER_STEP = 0.04;
-
     private FragmentHomeBinding binding;
     private SensorManager sensorManager;
     private Sensor stepSensor;
@@ -161,7 +160,7 @@ public class HomeFragment extends Fragment implements SensorEventListener {
             binding.tvStepCount.setText(String.valueOf(stepsCount));
             binding.progressBar.setProgress(stepsCount);
 
-            /// calculate distance and calories
+            /// calculate distance
             double distance = (stepsCount * METER_PER_STEP) / 1000;
             binding.tvDistance.setText(String.format("%.2f km", distance));
 
@@ -169,7 +168,7 @@ public class HomeFragment extends Fragment implements SensorEventListener {
             double calories = stepsCount * CALORIES_PER_STEP;
             binding.tvCalories.setText(String.format("%.0f kcal", calories));
 
-            /// chart eka load karanawa
+            /// update the current day stats of chart
             if (binding.stepChart.getData() != null && binding.stepChart.getData().getDataSetCount() >0) {
 
                 BarDataSet set = (BarDataSet) binding.stepChart.getData().getDataSetByIndex(0);
@@ -212,7 +211,7 @@ public class HomeFragment extends Fragment implements SensorEventListener {
 
         binding.stepChart.setData(barData);
 
-        binding.stepChart.getAxisLeft().setAxisMinimum(0f); // බිංදුවෙන් පටන් ගන්න
+        binding.stepChart.getAxisLeft().setAxisMinimum(0f);
         binding.stepChart.getAxisRight().setEnabled(false);
         binding.stepChart.getXAxis().setPosition(com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM);
         binding.stepChart.getXAxis().setDrawGridLines(false);
