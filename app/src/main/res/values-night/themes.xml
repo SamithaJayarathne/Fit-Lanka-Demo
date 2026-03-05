@@ -1,5 +1,6 @@
 <resources>
     <style name="Theme.FitLanka" parent="Theme.Material3.Dark.NoActionBar">
+
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
@@ -49,4 +50,10 @@
 
         <item name="background">@drawable/darkbg</item>
     </style>
+
+    <style name="AppTextAppearance.Poppins" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="fontFamily">@font/poppins</item>
+    </style>
+
 </resources>

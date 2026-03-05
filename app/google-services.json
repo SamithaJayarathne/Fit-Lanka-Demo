@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "757051379453",
+    "project_id": "fit-lanka",
+    "storage_bucket": "fit-lanka.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757051379453:android:33613df2abfcbf109bb894",
+        "android_client_info": {
+          "package_name": "com.neoviz.fit_lanka_demo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "757051379453-bqt983ejo8n4llaccmf31jchfvouljoi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neoviz.fit_lanka_demo",
+            "certificate_hash": "ea4608d8d286e43af6104fc38ed8d34f2e13fa82"
+          }
+        },
+        {
+          "client_id": "757051379453-veibcmtacbadv002kpatsepfgo776694.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANgTT1NLWsaS_g_3YGKAPN2GBtoyOMfyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "757051379453-veibcmtacbadv002kpatsepfgo776694.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
