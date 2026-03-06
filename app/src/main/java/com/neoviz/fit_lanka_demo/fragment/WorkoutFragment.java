@@ -1,66 +1,195 @@
 package com.neoviz.fit_lanka_demo.fragment;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
-import com.neoviz.fit_lanka_demo.R;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link WorkoutFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class WorkoutFragment extends Fragment {
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.neoviz.fit_lanka_demo.databinding.FragmentWorkoutBinding;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+import java.util.HashMap;
+import java.util.Map;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+public class WorkoutFragment extends Fragment implements SensorEventListener, OnMapReadyCallback {
 
-    public WorkoutFragment() {
-        // Required empty public constructor
-    }
+    private FragmentWorkoutBinding binding;
+    private SensorManager sensorManager;
+    private Sensor stepSensor;
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment WorkoutFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static WorkoutFragment newInstance(String param1, String param2) {
-        WorkoutFragment fragment = new WorkoutFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
+
+    private boolean isWorkoutActive = false;
+    private int stepsAtStart = 0;
+    private int currentWorkoutSteps = 0;
+    private static final double WORKOUT_COIN_VALUE = 0.1;
+    private GoogleMap mMap;
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentWorkoutBinding.inflate(inflater, container, false);
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
+        // Initialize Map
+        binding.workoutMapView.onCreate(savedInstanceState);
+        binding.workoutMapView.getMapAsync(this);
+
+        return binding.getRoot();
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        sensorManager = (SensorManager) requireActivity().getSystemService(Context.SENSOR_SERVICE);
+        stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+
+        binding.btnStartWorkout.setOnClickListener(v -> startWorkout());
+        binding.btnStopWorkout.setOnClickListener(v -> stopWorkout());
+
+        binding.btnStopWorkout.setVisibility(View.GONE);
+    }
+
+    private void startWorkout() {
+        if (stepSensor == null) {
+            Toast.makeText(getContext(), "Sensor not found!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        isWorkoutActive = true;
+        stepsAtStart = 0;
+        currentWorkoutSteps = 0;
+
+        binding.btnStartWorkout.setVisibility(View.GONE);
+        binding.btnStopWorkout.setVisibility(View.VISIBLE);
+        binding.tvWorkoutSteps.setText("0");
+
+        Toast.makeText(getContext(), "Workout Started!", Toast.LENGTH_LONG).show();
+    }
+
+    private void stopWorkout() {
+        isWorkoutActive = false;
+        binding.btnStopWorkout.setEnabled(false);
+        updateWorkoutToFirestore(currentWorkoutSteps);
+    }
+
+    private void updateWorkoutToFirestore(int totalSteps) {
+        if (auth.getCurrentUser() == null || totalSteps <= 0) {
+            resetUI();
+            return;
+        }
+
+        double earnedCoins = totalSteps * WORKOUT_COIN_VALUE;
+        String uid = auth.getCurrentUser().getUid();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("currentDaySteps", FieldValue.increment(totalSteps));
+        updates.put("allTimeSteps", FieldValue.increment(totalSteps));
+        updates.put("fitCoins", FieldValue.increment(earnedCoins));
+
+        db.collection("users").document(uid)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Workout Saved! Earned: " + earnedCoins + " Coins", Toast.LENGTH_SHORT).show();
+                    resetUI();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Workout", "Update failed", e);
+                    if (binding != null) binding.btnStopWorkout.setEnabled(true);
+                });
+    }
+
+    private void resetUI() {
+        if (binding != null) {
+            binding.btnStartWorkout.setVisibility(View.VISIBLE);
+            binding.btnStopWorkout.setVisibility(View.GONE);
+            binding.btnStopWorkout.setEnabled(true);
+            binding.tvWorkoutSteps.setText("0");
+        }
+        currentWorkoutSteps = 0;
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (isWorkoutActive && event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+            int totalStepsSinceBoot = (int) event.values[0];
+            if (stepsAtStart == 0) stepsAtStart = totalStepsSinceBoot;
+            currentWorkoutSteps = totalStepsSinceBoot - stepsAtStart;
+            if (binding != null) binding.tvWorkoutSteps.setText(String.valueOf(currentWorkoutSteps));
         }
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_workout, container, false);
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    // --- Map Lifecycle Management ---
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null) binding.workoutMapView.onResume();
+        if (stepSensor != null) {
+            sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (binding != null) binding.workoutMapView.onPause();
+        super.onPause();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (binding != null) binding.workoutMapView.onLowMemory();
+    }
+
+    @Override
+    public void onDestroyView() {
+        // 1. Map එක මුලින්ම Destroy කරන්න
+        if (binding != null) {
+            binding.workoutMapView.onDestroy();
+        }
+        // 2. Sensor එක Unregister කරන්න
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+        // 3. Super call එක අන්තිමට
+        super.onDestroyView();
+        // 4. Binding එක null කරන්න
+        binding = null;
+    }
+
+    // මචං, මම onDestroy() එක අයින් කළා. මොකද onDestroyView එකේදී අපි ඔක්කොම clean කරනවා.
+    // Fragment එකක View එකට අදාළ දේවල් අයින් කරන්න ඕනේ onDestroyView එකේදී.
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mMap.setMyLocationEnabled(true);
+        }
     }
 }

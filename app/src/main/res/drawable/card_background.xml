@@ -9,7 +9,9 @@
         android:startColor="#88AAAAAA" />
 
     <!-- Rounded corners for soft glass look -->
-    <corners android:radius="20dp" />
+    <corners
+
+        android:radius="20dp" />
 
     <!-- Optional subtle border for elegance -->
     <stroke

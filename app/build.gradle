@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     id 'com.google.gms.google-services'
+    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
 }
 
 android {
@@ -21,6 +22,7 @@ android {
 
     buildFeatures{
         viewBinding true
+        buildConfig true
     }
 
     buildTypes {
@@ -42,6 +44,8 @@ dependencies {
     implementation libs.constraintlayout
     implementation libs.firebase.auth
     implementation libs.firebase.firestore
+    implementation libs.core.splashscreen
+    implementation libs.play.services.maps
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
@@ -51,13 +55,20 @@ dependencies {
     annotationProcessor(libs.projectlombok.lombok)
 
     // firebase
-    implementation platform('com.google.firebase:firebase-bom:34.9.0')
-    implementation 'com.google.firebase:firebase-analytics'
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
 
     // glide
-    implementation 'com.github.bumptech.glide:glide:5.0.5'
+    implementation libs.glide
 
-    implementation "androidx.credentials:credentials:1.2.2"
-    implementation "androidx.credentials:credentials-play-services-auth:1.2.2"
-    implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+    implementation libs.credentials
+    implementation libs.credentials.play.services.auth
+    implementation libs.googleid
+
+    // firebase storage
+    implementation(libs.firebase.storage)
+
+    // google map
+    implementation libs.play.services.maps
+    implementation libs.play.services.location
 }

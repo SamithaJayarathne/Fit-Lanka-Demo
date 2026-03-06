@@ -1,15 +1,23 @@
 package com.neoviz.fit_lanka_demo.activity;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 import android.widget.Toolbar;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
@@ -18,27 +26,50 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.databinding.ActivityHomeBinding;
 import com.neoviz.fit_lanka_demo.databinding.ActivityLoginBinding;
+import com.neoviz.fit_lanka_demo.databinding.NavHeaderBinding;
 import com.neoviz.fit_lanka_demo.fragment.HomeFragment;
 import com.neoviz.fit_lanka_demo.fragment.LeaderboardFragment;
 import com.neoviz.fit_lanka_demo.fragment.ShopFragment;
 import com.neoviz.fit_lanka_demo.fragment.WorkoutFragment;
+import com.neoviz.fit_lanka_demo.model.User;
 
 public class HomeActivity extends AppCompatActivity implements
         NavigationView.OnNavigationItemSelectedListener,
         NavigationBarView.OnItemSelectedListener {
 
     private ActivityHomeBinding binding;
+    private NavHeaderBinding headerBinding;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private MaterialToolbar toolbar;
+    private FirebaseAuth firebaseAuth;
+    private FirebaseFirestore firestore;
+    private androidx.appcompat.app.AlertDialog loadingDialog;
+
+    private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result ->{
+                if(result.getResultCode() == RESULT_OK && result.getData()!=null){
+                    Uri imageURI = result.getData().getData();
+                    uploadImageToFirebase(imageURI);
+                }
+            }
+    );
 
 
     @Override
@@ -49,8 +80,13 @@ public class HomeActivity extends AppCompatActivity implements
         binding = ActivityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        View headerView = binding.sideNavigationView.getHeaderView(0);
+        headerBinding = NavHeaderBinding.bind(headerView);
+
         loadFragment(new HomeFragment());
 
+        firebaseAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
         drawerLayout = binding.drawerLayout;
         navigationView = binding.sideNavigationView;
         bottomNavigationView = binding.bottomNavigationView;
@@ -64,6 +100,8 @@ public class HomeActivity extends AppCompatActivity implements
                 R.string.navigation_drawer_open,
                 R.string.navigation_drawer_close
         );
+
+        loadUserDetails();
 
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
@@ -82,6 +120,83 @@ public class HomeActivity extends AppCompatActivity implements
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
 
+        headerBinding.navHeaderImg.setOnClickListener(view->{
+            openGallery();
+        });
+
+    }
+
+    private void uploadImageToFirebase(Uri uri) {
+        String uid = firebaseAuth.getCurrentUser().getUid();
+
+        showLoadingDialog(true);
+
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                .child("profile-images")
+                .child(uid)
+                .child("profile.jpg");
+
+        storageRef.putFile(uri).addOnSuccessListener(ts -> {
+            ts.getStorage().getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                String imageURL = downloadUri.toString();
+
+                firestore.collection("users")
+                        .document(uid)
+                        .update("profileImageUrl", imageURL)
+                        .addOnSuccessListener(aVoid -> {
+                            loadUserDetails();
+                            showLoadingDialog(false);
+                            Toast.makeText(this, "Profile Updated!", Toast.LENGTH_SHORT).show();
+                        });
+            });
+
+        }).addOnFailureListener(e -> {
+           showLoadingDialog(false);
+            Toast.makeText(this, "Upload Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void openGallery() {
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        pickImageLauncher.launch(intent);
+    }
+
+    private void loadUserDetails() {
+        if (firebaseAuth.getCurrentUser() != null) {
+            String uid = firebaseAuth.getCurrentUser().getUid();
+
+            firestore.collection("users")
+                    .document(uid)
+                    .get()
+                    .addOnSuccessListener(qds -> {
+
+                        User user = qds.toObject(User.class);
+
+                        if (user != null) {
+                            headerBinding.navHeaderName.setText(user.getName());
+
+                            if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+                                Glide.with(getApplicationContext())
+                                        .load(user.getProfileImageUrl())
+                                        .placeholder(R.drawable.profile_24px)
+                                        .centerCrop()
+                                        .into(headerBinding.navHeaderImg);
+                            }
+
+                            else if (firebaseAuth.getCurrentUser().getPhotoUrl() != null) {
+                                Glide.with(getApplicationContext())
+                                        .load(firebaseAuth.getCurrentUser().getPhotoUrl())
+                                        .centerCrop()
+                                        .into(headerBinding.navHeaderImg);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(ex -> {
+                        Log.e("HomeActivity", "Error loading user details", ex);
+                    });
+        }
     }
 
     @Override
@@ -120,6 +235,10 @@ public class HomeActivity extends AppCompatActivity implements
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
             loadFragment(new ShopFragment());
 
+        }else if(itemId == R.id.side_nav_profile){
+            navigationView.setCheckedItem(R.id.side_nav_shop);
+            Intent intent = new Intent(this, ProfileActivity.class);
+            startActivity(intent);
 
         } else if (itemId == R.id.side_nav_login) {
             navigationView.setCheckedItem(R.id.side_nav_login);
@@ -136,7 +255,7 @@ public class HomeActivity extends AppCompatActivity implements
             fragment.setArguments(bundle);
             loadFragment(fragment);
 
-        } else if (itemId==R.id.side_nav_wishlist) {
+        } else if (itemId == R.id.side_nav_wishlist) {
             navigationView.setCheckedItem(R.id.side_nav_wishlist);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
             ShopFragment fragment = new ShopFragment();
@@ -145,7 +264,7 @@ public class HomeActivity extends AppCompatActivity implements
             fragment.setArguments(bundle);
             loadFragment(fragment);
 
-        } else if (itemId==R.id.side_nav_orders) {
+        } else if (itemId == R.id.side_nav_orders) {
             navigationView.setCheckedItem(R.id.side_nav_orders);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
             ShopFragment fragment = new ShopFragment();
@@ -153,6 +272,20 @@ public class HomeActivity extends AppCompatActivity implements
             bundle.putInt("targetTab", 3);
             fragment.setArguments(bundle);
             loadFragment(fragment);
+
+        } else if (itemId == R.id.side_nav_logout) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to logout")
+                    .setPositiveButton("Logout", (dialog, which) -> {
+                        FirebaseAuth.getInstance().signOut();
+                        Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -164,5 +297,25 @@ public class HomeActivity extends AppCompatActivity implements
                 .beginTransaction()
                 .replace(R.id.fragment_container_view, fragment)
                 .commit();
+    }
+
+    private void showLoadingDialog(boolean isShow){
+        if(isShow){
+
+            if(loadingDialog==null){
+                View view = getLayoutInflater().inflate(R.layout.dialog_loading, null);
+                loadingDialog = new MaterialAlertDialogBuilder(this)
+                        .setView(view)
+                        .setCancelable(false)
+                        .create();
+
+            }
+            loadingDialog.show();
+
+        }else{
+            if (loadingDialog != null && loadingDialog.isShowing()) {
+                loadingDialog.dismiss();
+            }
+        }
     }
 }

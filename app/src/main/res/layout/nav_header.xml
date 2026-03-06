@@ -1,39 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="180dp"
-    android:background="@color/md_theme_surfaceDim"
-    android:gravity="bottom"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:layout_height="250dp"
+    android:background="@color/md_theme_surfaceContainer"
+    android:padding="24dp">
+
+    <View
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:background="@drawable/nav_header_gradient_circle"
+        android:alpha="0.1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="-40dp"
+        android:layout_marginTop="-40dp" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/nav_header_img"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_marginTop="20dp"
+        android:padding="2dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/profile_24px"
-        android:tint="@color/md_theme_onSurface"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/CircleImage"
-        app:strokeWidth="2dp" />
+        app:strokeColor="@color/md_theme_primary"
+        app:strokeWidth="3dp" />
 
     <TextView
         android:id="@+id/nav_header_name"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:text="Kasun Perera"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
-        android:textStyle="bold"
-        android:textColor="@color/md_theme_onSurface" />
-
-    <TextView
-        android:id="@+id/nav_header_points"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="1,250 Points Earned"
         android:textColor="@color/md_theme_onSurface"
-        android:textSize="12sp" />
+        android:textSize="20sp"
+        android:fontFamily="@font/poppins"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/nav_header_img" />
 
-</LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/points_badge_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/nav_header_name">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/stars_24px"
+            app:tint="@color/md_theme_primary" />
+
+        <TextView
+            android:id="@+id/nav_header_points"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="1,250 Points Earned"
+            android:textColor="@color/md_theme_primary"
+            android:textSize="14sp"
+            android:fontFamily="@font/poppins"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -49,6 +49,7 @@
         <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
 
         <item name="background">@drawable/darkbg</item>
+        <item name="android:windowIsTranslucent">true</item>
     </style>
 
     <style name="AppTextAppearance.Poppins" parent="TextAppearance.Material3.BodyLarge">

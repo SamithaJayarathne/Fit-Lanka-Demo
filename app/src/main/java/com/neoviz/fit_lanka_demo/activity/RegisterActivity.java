@@ -85,7 +85,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 .role(UserRole.ROLE_USER)
                                 .createdAt(Timestamp.now())
                                 .isActive(true)
-                                .rewardPoints(0)
+                                .fitCoins(0)
                                 .addresses(new ArrayList<>())
                                 .build();
 
@@ -93,7 +93,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 .document(uid)
                                 .set(user)
                                 .addOnSuccessListener(aVoid -> {
-                                    toggleLoading(false); // සාර්ථකයි
+                                    toggleLoading(false);
                                     clearFields();
                                     Toast.makeText(this, "Registration Successful!", Toast.LENGTH_SHORT).show();
 

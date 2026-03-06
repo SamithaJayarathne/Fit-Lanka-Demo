@@ -26,11 +26,11 @@ public class User {
     private int dailyStepTarget;
     private int currentDaySteps;
     private long allTimeSteps;
-    private int rewardPoints;
+    private double fitCoins;
+    private double weight;
+    private double height;
     private List<Address> addresses;
     private List<DailySteps> dailySteps;
-
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
