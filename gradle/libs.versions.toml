@@ -19,6 +19,7 @@ coreSplashscreen = "1.2.0"
 playServicesLocation = "21.3.0"
 playServicesMaps = "20.0.0"
 secretsGradlePlugin = "2.0.1"
+places = "5.1.1"
 
 [libraries]
 credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
@@ -43,6 +44,7 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
+places = { group = "com.google.android.libraries.places", name = "places", version.ref = "places" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

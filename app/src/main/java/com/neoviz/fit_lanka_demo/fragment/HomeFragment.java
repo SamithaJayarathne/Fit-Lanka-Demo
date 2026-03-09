@@ -31,6 +31,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.neoviz.fit_lanka_demo.databinding.FragmentHomeBinding;
 import com.neoviz.fit_lanka_demo.model.User;
+import com.neoviz.fit_lanka_demo.util.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,14 +47,6 @@ public class HomeFragment extends Fragment implements SensorEventListener {
     private static final String STEPS_AT_REST_KEY = "stepsAtRest";
     private static final String LAST_SAVED_DATE_KEY = "lastDate";
     private static final String PREF_CURRENT_STEPS = "currentSteps";
-    private static final String DAILY_STEP_TARGET_KEY = "dailyStepTarget";
-
-    // Constants
-    private static final Double METER_PER_STEP = 0.762;
-    private static final Double CALORIES_PER_STEP = 0.04;
-
-    /// 1000 steps = 1 Fit Coin (passive mode)
-    private static final Double COINS_PER_STEP = 0.001;
 
     private FragmentHomeBinding binding;
     private SensorManager sensorManager;
@@ -137,7 +130,7 @@ public class HomeFragment extends Fragment implements SensorEventListener {
         int diff = steps - lastSyncedSteps;
         if (diff <= 0) return;
 
-        double earnedCoins = diff * COINS_PER_STEP;
+        double earnedCoins = diff * Utils.COINS_PER_STEP_PASSIVE;
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentDaySteps", steps);
@@ -203,10 +196,10 @@ public class HomeFragment extends Fragment implements SensorEventListener {
             binding.tvStepCount.setText(String.valueOf(stepsCount));
             binding.progressBar.setProgress(stepsCount);
 
-            double distance = (stepsCount * METER_PER_STEP) / 1000;
+            double distance = (stepsCount * Utils.METER_PER_STEP) / 1000;
             binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", distance));
 
-            double calories = stepsCount * CALORIES_PER_STEP;
+            double calories = stepsCount * Utils.CALORIES_PER_STEP;
             binding.tvCalories.setText(String.format(Locale.getDefault(), "%.0f kcal", calories));
 
             if (binding.stepChart.getData() != null && binding.stepChart.getData().getDataSetCount() > 0) {

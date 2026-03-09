@@ -29,93 +29,121 @@
         android:orientation="vertical"
         android:padding="25dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="ACTIVE WORKOUT"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="14sp"
-            android:letterSpacing="0.1"
-            android:textStyle="bold" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:weightSum="2">
+            android:visibility="visible"
+            android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center">
 
                 <TextView
-                    android:id="@+id/tvWorkoutSteps"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="36sp"
+                    android:layout_gravity="center"
+                    android:letterSpacing="0.1"
+                    android:text="ACTIVE WORKOUT"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <ImageView
+                    android:id="@+id/statsContainerArrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="STEPS"
-                    android:textSize="12sp"
-                    android:alpha="0.6"
-                    android:textColor="?attr/colorOnSurface" />
+                    android:src="@drawable/down_24px"
+                    android:backgroundTint="@color/md_theme_primary"
+                    android:layout_marginLeft="12dp"/>
+
             </LinearLayout>
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="40dp"
-                android:background="?attr/colorOutlineVariant" />
+
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:id="@+id/statsContainerDetails"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="20dp"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:weightSum="2">
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:src="@drawable/coin"
-                        app:tint="?attr/colorPrimary" />
+                    android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/tvEarnedCoins"
+                        android:id="@+id/tvWorkoutSteps"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="0.00"
+                        android:text="0"
                         android:textColor="?attr/colorOnSurface"
-                        android:textSize="32sp"
+                        android:textSize="36sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="STEPS"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="FIT COINS"
-                    android:textSize="12sp"
-                    android:alpha="0.6"
-                    android:textColor="?attr/colorOnSurface" />
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/coin"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:id="@+id/tvEarnedCoins"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="0.00"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="32sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="FIT COINS"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
+
         </LinearLayout>
+
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -134,7 +162,7 @@
                 app:cornerRadius="15dp"
                 app:icon="@drawable/play_arrow_24px"
                 app:iconGravity="textStart"
-                app:iconTint="?attr/colorOnPrimary"/>
+                app:iconTint="?attr/colorOnPrimary" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStopWorkout"
@@ -149,7 +177,7 @@
                 app:cornerRadius="15dp"
                 app:icon="@drawable/stop_24px"
                 app:iconGravity="textStart"
-                app:iconTint="?attr/colorOnError"/>
+                app:iconTint="?attr/colorOnError" />
         </FrameLayout>
     </LinearLayout>
 </RelativeLayout>
