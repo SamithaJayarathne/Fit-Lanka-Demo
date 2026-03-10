@@ -1,8 +1,11 @@
 package com.neoviz.fit_lanka_demo.activity;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -19,6 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
@@ -46,6 +51,7 @@ import com.neoviz.fit_lanka_demo.fragment.LeaderboardFragment;
 import com.neoviz.fit_lanka_demo.fragment.ShopFragment;
 import com.neoviz.fit_lanka_demo.fragment.WorkoutFragment;
 import com.neoviz.fit_lanka_demo.model.User;
+import com.neoviz.fit_lanka_demo.service.StepCounterService;
 
 public class HomeActivity extends AppCompatActivity implements
         NavigationView.OnNavigationItemSelectedListener,
@@ -124,6 +130,45 @@ public class HomeActivity extends AppCompatActivity implements
             openGallery();
         });
 
+        startStepService();
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 101) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // දැන් පර්මිෂන් ලැබුණා, සර්විස් එක පටන් ගන්න
+                startMyForegroundService();
+            } else {
+                // User පර්මිෂන් එක reject කළොත් පියවර මනින්න බැරි බව කියන්න
+                Toast.makeText(this, "Permission denied. Step counter won't work.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void startStepService() {
+        // Android 10 (Q) සහ ඊට ඉහළ නම් ACTIVITY_RECOGNITION ඕනේ
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED) {
+                startMyForegroundService();
+            } else {
+                // පර්මිෂන් ඉල්ලන්න
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACTIVITY_RECOGNITION}, 101);
+            }
+        } else {
+            // පරණ Android version වලට කෙලින්ම start කරන්න
+            startMyForegroundService();
+        }
+    }
+
+    private void startMyForegroundService() {
+        Intent serviceIntent = new Intent(this, StepCounterService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
     }
 
     private void uploadImageToFirebase(Uri uri) {

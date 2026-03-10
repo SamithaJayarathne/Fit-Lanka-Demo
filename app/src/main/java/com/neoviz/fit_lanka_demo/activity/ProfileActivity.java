@@ -116,6 +116,8 @@ public class ProfileActivity extends AppCompatActivity {
                         binding.profileEmail.setText(user.getEmail());
                         binding.editName.setText(user.getName());
                         binding.editPhone.setText(user.getContactNumber());
+                        binding.editWeight.setText(String.valueOf(user.getWeight()));
+                        binding.editHeight.setText(String.valueOf(user.getHeight()));
 
 
                         binding.statWeight.statValue.setText(String.valueOf(user.getWeight()));

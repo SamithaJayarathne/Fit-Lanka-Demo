@@ -84,11 +84,11 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
     private LocationReceiver locationReceiver;
     private PlacesClient placesClient;
 
-    private class LocationReceiver extends BroadcastReceiver{
+    private class LocationReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if("ACTION_LOCATION_UPDATE".equals(intent.getAction())){
+            if ("ACTION_LOCATION_UPDATE".equals(intent.getAction())) {
                 double lat = intent.getDoubleExtra("lat", 0);
                 double lng = intent.getDoubleExtra("lng", 0);
 
@@ -96,7 +96,7 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
                 pathPoints.add(newPoint);
                 updatePolyline();
 
-                if(mMap!=null && isWorkoutActive){
+                if (mMap != null && isWorkoutActive) {
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newPoint, 18f));
                 }
             }
@@ -131,18 +131,18 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
         binding.workoutMapView.onCreate(savedInstanceState);
         binding.workoutMapView.getMapAsync(this);
 
-        binding.statsContainer.setOnClickListener(view->{
-            if(binding.statsContainerDetails.getVisibility()==View.VISIBLE){
+        binding.statsContainer.setOnClickListener(view -> {
+            if (binding.statsContainerDetails.getVisibility() == View.VISIBLE) {
                 binding.statsContainerDetails.setVisibility(View.GONE);
                 binding.statsContainerArrow.setRotation(180f);
-            }else{
+            } else {
                 binding.statsContainerDetails.setVisibility(View.VISIBLE);
                 binding.statsContainerArrow.setRotation(0f);
             }
 
         });
 
-        if(!Places.isInitialized()){
+        if (!Places.isInitialized()) {
             Places.initializeWithNewPlacesApiEnabled(requireContext(), "AIzaSyASdoLRQ5c8zouLkyI6a44ib8xTKlPe320");
         }
 
@@ -170,7 +170,7 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
 
         // මචං, මෙතන 'gym' සහ 'park' වෙනුවට අලුත් Types පාවිච්චි කරන්න පුළුවන් (උදා: fitness_center)
         SearchNearbyRequest request = SearchNearbyRequest.builder(circularBounds, placeFields)
-                .setIncludedTypes(Arrays.asList("park", "fitness_center"))
+                .setIncludedTypes(Arrays.asList("park", "gym", "stadium", "swimming_pool", "sports_complex"))
                 .setMaxResultCount(10)
                 .build();
 
@@ -184,9 +184,19 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
 
                             int resourceId = R.drawable.park;
 
-                            if(placeTypes!=null && placeTypes.contains("fitness_center")){
+                            if (placeTypes != null && placeTypes.contains("gym")) {
                                 resourceId = R.drawable.gym;
                             }
+                            if (placeTypes != null && placeTypes.contains("stadium")) {
+                                resourceId = R.drawable.stadium;
+                            }
+                            if (placeTypes != null && placeTypes.contains("swimming_pool")) {
+                                resourceId = R.drawable.pool;
+                            }
+                            if (placeTypes != null && placeTypes.contains("sports_complex")) {
+                                resourceId = R.drawable.sports;
+                            }
+
 
                             mMap.addMarker(new MarkerOptions()
                                     .position(place.getLocation())
@@ -396,7 +406,7 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
         if (binding != null) binding.workoutMapView.onPause();
         super.onPause();
 
-        if(locationReceiver!=null){
+        if (locationReceiver != null) {
             requireActivity().unregisterReceiver(locationReceiver);
         }
     }
