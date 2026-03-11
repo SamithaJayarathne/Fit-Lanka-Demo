@@ -46,6 +46,7 @@ import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.databinding.ActivityHomeBinding;
 import com.neoviz.fit_lanka_demo.databinding.ActivityLoginBinding;
 import com.neoviz.fit_lanka_demo.databinding.NavHeaderBinding;
+import com.neoviz.fit_lanka_demo.fragment.ChallengesFragment;
 import com.neoviz.fit_lanka_demo.fragment.HomeFragment;
 import com.neoviz.fit_lanka_demo.fragment.LeaderboardFragment;
 import com.neoviz.fit_lanka_demo.fragment.ShopFragment;
@@ -332,6 +333,10 @@ public class HomeActivity extends AppCompatActivity implements
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
+        }else if(itemId == R.id.side_nav_challenges){
+            navigationView.setCheckedItem(R.id.side_nav_challenges);
+           loadFragment(new ChallengesFragment());
+
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

@@ -1,66 +1,136 @@
 package com.neoviz.fit_lanka_demo.fragment;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
-import com.neoviz.fit_lanka_demo.R;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link ChallengesFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.neoviz.fit_lanka_demo.adapter.ChallengeAdapter;
+import com.neoviz.fit_lanka_demo.databinding.FragmentChallengesBinding;
+import com.neoviz.fit_lanka_demo.model.Challenge;
+import com.neoviz.fit_lanka_demo.model.User;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 public class ChallengesFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private FragmentChallengesBinding binding;
+    private FirebaseFirestore firestore;
+    private User currentUser;
+    private String userId;
+    private ChallengeAdapter adapter;
+    private List<Challenge> challengeList = new ArrayList<>();
+    private int todaySteps;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentChallengesBinding.inflate(inflater, container, false);
+        firestore = FirebaseFirestore.getInstance();
+        userId = FirebaseAuth.getInstance().getUid();
 
-    public ChallengesFragment() {
-        // Required empty public constructor
-    }
+        // SharedPreferences වලින් අද පියවර ගණන ගන්නවා
+        SharedPreferences prefs = requireActivity().getSharedPreferences("StepPrefs", Context.MODE_PRIVATE);
+        todaySteps = prefs.getInt("currentSteps", 0);
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment ChallengesFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static ChallengesFragment newInstance(String param1, String param2) {
-        ChallengesFragment fragment = new ChallengesFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+        return binding.getRoot();
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // මේ මෙතඩ් දෙක මෙතනදී අනිවාර්යයෙන්ම Call විය යුතුයි
+        setupRecyclerView();
+        loadUserDataAndChallenges();
+    }
+
+    private void setupRecyclerView() {
+        binding.challengesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+    }
+
+    private void loadUserDataAndChallenges() {
+        if (userId == null) return;
+
+        firestore.collection("users").document(userId).get().addOnSuccessListener(snapshot -> {
+            currentUser = snapshot.toObject(User.class);
+            if (currentUser != null) {
+                fetchDailyChallenges();
+            }
+        });
+    }
+
+    private void fetchDailyChallenges() {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+
+        firestore.collection("challenges")
+                .whereEqualTo("date", today)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    challengeList.clear();
+                    for (DocumentSnapshot ds : querySnapshot) {
+                        challengeList.add(ds.toObject(Challenge.class));
+                    }
+
+                    if (challengeList.isEmpty()) {
+                        binding.tvNoChallenge.setVisibility(View.VISIBLE);
+                    } else {
+                        binding.tvNoChallenge.setVisibility(View.GONE);
+                        // Adapter එකට method reference එකක් ලෙස onClaimClick එක දෙනවා
+                        adapter = new ChallengeAdapter(challengeList, todaySteps,
+                                currentUser.getCompletedChallenges(), this::onClaimClick);
+                        binding.challengesRecyclerView.setAdapter(adapter);
+                    }
+                });
+    }
+
+    private void onClaimClick(Challenge challenge) {
+        String challengeId = challenge.getDate() + "_" + challenge.getTargetSteps();
+        DocumentReference userRef = firestore.collection("users").document(userId);
+
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot snapshot = transaction.get(userRef);
+            User user = snapshot.toObject(User.class);
+
+            if (user == null) return null;
+
+            Map<String, Boolean> completed = user.getCompletedChallenges();
+            if (completed.containsKey(challengeId)) return null;
+
+            double newFitCoins = user.getFitCoins() + challenge.getRewardCoins();
+            completed.put(challengeId, true);
+
+            transaction.update(userRef, "fitCoins", newFitCoins);
+            transaction.update(userRef, "completedChallenges", completed);
+            return null;
+
+        }).addOnSuccessListener(aVoid -> {
+            Toast.makeText(getContext(), "Success! +" + challenge.getRewardCoins() + " Fit-Coins", Toast.LENGTH_SHORT).show();
+            loadUserDataAndChallenges(); // UI එක Refresh කරනවා
+        }).addOnFailureListener(e -> {
+            Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_challenges, container, false);
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }
