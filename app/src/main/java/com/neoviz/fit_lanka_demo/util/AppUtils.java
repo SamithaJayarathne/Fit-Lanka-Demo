@@ -1,6 +1,6 @@
 package com.neoviz.fit_lanka_demo.util;
 
-public class Utils {
+public class AppUtils {
     public static final String DAILY_STEP_TARGET_KEY = "dailyStepTarget";
 
     // Constants

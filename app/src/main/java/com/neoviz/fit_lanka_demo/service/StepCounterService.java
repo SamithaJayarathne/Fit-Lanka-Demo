@@ -29,7 +29,8 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.neoviz.fit_lanka_demo.activity.HomeActivity;
 import com.neoviz.fit_lanka_demo.R;
-import com.neoviz.fit_lanka_demo.util.Utils;
+import com.neoviz.fit_lanka_demo.util.AppUtils;
+import com.neoviz.fit_lanka_demo.util.StepUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -156,14 +157,23 @@ public class StepCounterService extends Service implements SensorEventListener {
         int diff = steps - lastSyncedSteps;
         if (diff <= 0 && steps != 0) return;
 
+        String uid = auth.getCurrentUser().getUid();
+
+        /// update data for leaderboard
+        if(diff>0){
+            StepUtils.updateLeaderboardSteps(auth.getCurrentUser().getUid(), diff);
+        }
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentDaySteps", steps);
         if (diff > 0) {
             updates.put("allTimeSteps", FieldValue.increment(diff));
-            updates.put("fitCoins", FieldValue.increment(diff * Utils.COINS_PER_STEP_PASSIVE));
+            updates.put("fitCoins", FieldValue.increment(diff * AppUtils.COINS_PER_STEP_PASSIVE));
+
+
         }
 
-        db.collection("users").document(auth.getCurrentUser().getUid())
+        db.collection("users").document(uid)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> lastSyncedSteps = steps);
     }

@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,8 +30,13 @@ public class User {
     private double fitCoins;
     private double weight;
     private double height;
+    private int weeklySteps;
+    private int monthlySteps;
+    private int lastUpdateWeek;
+    private int lastUpdateMonth;
     private List<Address> addresses;
     private List<DailySteps> dailySteps;
+    private Map<String, Boolean> completedChallenges;
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

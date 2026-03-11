@@ -221,7 +221,7 @@ public class HomeActivity extends AppCompatActivity implements
 
                         if (user != null) {
                             headerBinding.navHeaderName.setText(user.getName());
-                            headerBinding.navHeaderPoints.setText(user.getFitCoins() + " Points");
+                            headerBinding.navHeaderPoints.setText(String.format("%.2f Fit-Coins", user.getFitCoins()));
 
                             if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
                                 Glide.with(getApplicationContext())

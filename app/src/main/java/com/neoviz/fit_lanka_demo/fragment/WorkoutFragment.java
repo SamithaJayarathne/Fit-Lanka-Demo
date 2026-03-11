@@ -25,7 +25,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -56,7 +55,8 @@ import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.databinding.FragmentWorkoutBinding;
 // මෙතන ඔයා හදපු අලුත් Service එක Import කරගන්න
 import com.neoviz.fit_lanka_demo.service.LocationService;
-import com.neoviz.fit_lanka_demo.util.Utils;
+import com.neoviz.fit_lanka_demo.util.AppUtils;
+import com.neoviz.fit_lanka_demo.util.StepUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -281,10 +281,12 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
             return;
         }
 
-        double earnedCoins = totalSteps * Utils.COINS_PER_STEP_ACTIVE;
+        double earnedCoins = totalSteps * AppUtils.COINS_PER_STEP_ACTIVE;
         if (binding != null)
             binding.tvEarnedCoins.setText(String.format(Locale.getDefault(), "%.2f", earnedCoins));
         String uid = firebaseAuth.getCurrentUser().getUid();
+
+        StepUtils.updateLeaderboardSteps(uid, totalSteps);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("currentDaySteps", FieldValue.increment(totalSteps));
@@ -343,8 +345,8 @@ public class WorkoutFragment extends Fragment implements SensorEventListener, On
     }
 
     private void showWorkoutSummary(int steps, double coins) {
-        double distance = (steps * Utils.METER_PER_STEP) / 1000.0;
-        double calories = steps * Utils.CALORIES_PER_STEP;
+        double distance = (steps * AppUtils.METER_PER_STEP) / 1000.0;
+        double calories = steps * AppUtils.CALORIES_PER_STEP;
 
         new MaterialAlertDialogBuilder(requireActivity())
                 .setTitle("🏃 Workout Summary")

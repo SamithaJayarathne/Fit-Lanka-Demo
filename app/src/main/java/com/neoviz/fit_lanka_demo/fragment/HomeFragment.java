@@ -24,7 +24,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.neoviz.fit_lanka_demo.databinding.FragmentHomeBinding;
 import com.neoviz.fit_lanka_demo.model.User;
-import com.neoviz.fit_lanka_demo.util.Utils;
+import com.neoviz.fit_lanka_demo.util.AppUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,10 +104,10 @@ public class HomeFragment extends Fragment {
         binding.tvStepCount.setText(String.valueOf(stepsCount));
         binding.progressBar.setProgress(stepsCount);
 
-        double distance = (stepsCount * Utils.METER_PER_STEP) / 1000.0;
+        double distance = (stepsCount * AppUtils.METER_PER_STEP) / 1000.0;
         binding.tvDistance.setText(String.format(Locale.getDefault(), "%.2f km", distance));
 
-        double calories = stepsCount * Utils.CALORIES_PER_STEP;
+        double calories = stepsCount * AppUtils.CALORIES_PER_STEP;
         binding.tvCalories.setText(String.format(Locale.getDefault(), "%.0f kcal", calories));
     }
 
