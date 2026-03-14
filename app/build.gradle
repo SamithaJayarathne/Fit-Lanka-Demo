@@ -81,4 +81,10 @@ dependencies {
 
     //dots indicator
     implementation("com.tbuonomo:dotsindicator:5.1.0")
+
+    //payhere
+    implementation 'com.github.PayHereDevs:payhere-android-sdk:v3.0.18'
+
+    //gson
+    implementation 'com.google.code.gson:gson:2.8.0'
 }

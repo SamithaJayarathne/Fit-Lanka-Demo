@@ -118,8 +118,7 @@
                         <ImageView
                             android:layout_width="22dp"
                             android:layout_height="22dp"
-                            android:src="@drawable/coin"
-                            app:tint="?attr/colorPrimary" />
+                            android:src="@drawable/fit_coin" />
 
                         <TextView
                             android:id="@+id/tvEarnedCoins"

@@ -138,6 +138,7 @@ public class CartFragment extends Fragment {
     private void updateUIWithTotals() {
         if (binding == null || currentUser == null) return;
 
+        // User ගේ coins ගාන සහ Products වලට දිය හැකි උපරිම discount එක අතරින් අඩුම අගය ගමු
         double maxPotentialDiscount = Math.min(currentUser.getFitCoins(), totalMaxDiscountPossible);
 
         if (isDiscountApplied) {
@@ -179,7 +180,24 @@ public class CartFragment extends Fragment {
         });
 
         binding.btnCheckout.setOnClickListener(v -> {
+            double grandTotal = subtotal + deliveryFee - appliedDiscount;
 
+            // අපි pass කරන්න ඕනේ claimed coins ගණන appliedDiscount එකට සමානයි (LKR 1 = 1 Coin නම්)
+            int claimedCoins = (int) appliedDiscount;
+
+            CheckoutFragment checkoutFragment = new CheckoutFragment();
+            Bundle bundle = new Bundle();
+            bundle.putDouble("finalTotal", grandTotal);
+            bundle.putBoolean("isCoinsClaimed", isDiscountApplied); // checkbox/isDiscountApplied state එක
+            bundle.putInt("claimedCoinsAmount", claimedCoins);      // කැපෙන coins ගණන
+            bundle.putDouble("discountAmount", appliedDiscount);    // අඩු වුණ රුපියල් ගණන
+
+            checkoutFragment.setArguments(bundle);
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container_view, checkoutFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
     }
 
@@ -215,7 +233,9 @@ public class CartFragment extends Fragment {
     }
 
     private void resetTotals() {
-        subtotal = 0; appliedDiscount = 0;
+        subtotal = 0;
+        appliedDiscount = 0;
+        isDiscountApplied = false;
         updateUIWithTotals();
     }
 
