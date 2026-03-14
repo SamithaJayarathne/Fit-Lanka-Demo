@@ -70,8 +70,8 @@ public class HomeActivity extends AppCompatActivity implements
 
     private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            result ->{
-                if(result.getResultCode() == RESULT_OK && result.getData()!=null){
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     Uri imageURI = result.getData().getData();
                     uploadImageToFirebase(imageURI);
                 }
@@ -83,6 +83,7 @@ public class HomeActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
 
         binding = ActivityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -127,11 +128,23 @@ public class HomeActivity extends AppCompatActivity implements
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
 
-        headerBinding.navHeaderImg.setOnClickListener(view->{
+        headerBinding.navHeaderImg.setOnClickListener(view -> {
             openGallery();
         });
 
         startStepService();
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
 
     }
 
@@ -148,6 +161,7 @@ public class HomeActivity extends AppCompatActivity implements
             }
         }
     }
+
     private void startStepService() {
         // Android 10 (Q) සහ ඊට ඉහළ නම් ACTIVITY_RECOGNITION ඕනේ
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -197,7 +211,7 @@ public class HomeActivity extends AppCompatActivity implements
             });
 
         }).addOnFailureListener(e -> {
-           showLoadingDialog(false);
+            showLoadingDialog(false);
             Toast.makeText(this, "Upload Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
@@ -230,9 +244,7 @@ public class HomeActivity extends AppCompatActivity implements
                                         .placeholder(R.drawable.profile_24px)
                                         .centerCrop()
                                         .into(headerBinding.navHeaderImg);
-                            }
-
-                            else if (firebaseAuth.getCurrentUser().getPhotoUrl() != null) {
+                            } else if (firebaseAuth.getCurrentUser().getPhotoUrl() != null) {
                                 Glide.with(getApplicationContext())
                                         .load(firebaseAuth.getCurrentUser().getPhotoUrl())
                                         .centerCrop()
@@ -282,9 +294,13 @@ public class HomeActivity extends AppCompatActivity implements
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
             loadFragment(new ShopFragment());
 
-        }else if(itemId == R.id.side_nav_profile){
+        } else if (itemId == R.id.side_nav_profile) {
             navigationView.setCheckedItem(R.id.side_nav_shop);
+
             Intent intent = new Intent(this, ProfileActivity.class);
+
+            intent.putExtra("name", "sasd");
+
             startActivity(intent);
 
         } else if (itemId == R.id.side_nav_login) {
@@ -297,6 +313,7 @@ public class HomeActivity extends AppCompatActivity implements
             navigationView.setCheckedItem(R.id.side_nav_cart);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
             ShopFragment fragment = new ShopFragment();
+
             Bundle bundle = new Bundle();
             bundle.putInt("targetTab", 2);
             fragment.setArguments(bundle);
@@ -333,9 +350,9 @@ public class HomeActivity extends AppCompatActivity implements
                     })
                     .setNegativeButton("Cancel", null)
                     .show();
-        }else if(itemId == R.id.side_nav_challenges){
+        } else if (itemId == R.id.side_nav_challenges) {
             navigationView.setCheckedItem(R.id.side_nav_challenges);
-           loadFragment(new ChallengesFragment());
+            loadFragment(new ChallengesFragment());
 
         }
 
@@ -347,13 +364,14 @@ public class HomeActivity extends AppCompatActivity implements
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container_view, fragment)
+                .addToBackStack(null)
                 .commit();
     }
 
-    private void showLoadingDialog(boolean isShow){
-        if(isShow){
+    private void showLoadingDialog(boolean isShow) {
+        if (isShow) {
 
-            if(loadingDialog==null){
+            if (loadingDialog == null) {
                 View view = getLayoutInflater().inflate(R.layout.dialog_loading, null);
                 loadingDialog = new MaterialAlertDialogBuilder(this)
                         .setView(view)
@@ -363,10 +381,15 @@ public class HomeActivity extends AppCompatActivity implements
             }
             loadingDialog.show();
 
-        }else{
+        } else {
             if (loadingDialog != null && loadingDialog.isShowing()) {
                 loadingDialog.dismiss();
             }
         }
+    }
+
+    public void setNavigationVisibility(int visibility) {
+        binding.bottomNavigationView.setVisibility(visibility);
+        binding.appBarLayout.setVisibility(visibility);
     }
 }

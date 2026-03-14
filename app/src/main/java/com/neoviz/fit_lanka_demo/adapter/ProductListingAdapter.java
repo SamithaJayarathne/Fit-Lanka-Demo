@@ -15,12 +15,12 @@ import com.neoviz.fit_lanka_demo.model.Product;
 
 import java.util.List;
 
-public class NewArrivalsProductAdapter extends RecyclerView.Adapter<NewArrivalsProductAdapter.ViewHolder> {
+public class ProductListingAdapter extends RecyclerView.Adapter<ProductListingAdapter.ViewHolder> {
 
     private List<Product> products;
     private OnProductClickListener productClickListener;
 
-    public NewArrivalsProductAdapter(List<Product> products, OnProductClickListener productClickListener) {
+    public ProductListingAdapter(List<Product> products, OnProductClickListener productClickListener) {
         this.products = products;
         this.productClickListener = productClickListener;
     }

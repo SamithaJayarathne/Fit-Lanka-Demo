@@ -1,44 +1,45 @@
 package com.neoviz.fit_lanka_demo.fragment;
 
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.google.android.material.chip.Chip;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.neoviz.fit_lanka_demo.R;
-import com.neoviz.fit_lanka_demo.adapter.FeaturedProductAdapter;
-import com.neoviz.fit_lanka_demo.adapter.NewArrivalsProductAdapter;
-import com.neoviz.fit_lanka_demo.adapter.TopDiscountProductAdapter;
+import com.neoviz.fit_lanka_demo.adapter.ProductListingAdapter;
 import com.neoviz.fit_lanka_demo.databinding.FragmentProductListBinding;
 import com.neoviz.fit_lanka_demo.model.Category;
 import com.neoviz.fit_lanka_demo.model.Product;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ProductListFragment extends Fragment {
 
     private FragmentProductListBinding binding;
-
+    private FirebaseFirestore firestore;
+    private List<Product> products;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-        }
+        firestore = FirebaseFirestore.getInstance();
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         binding = FragmentProductListBinding.inflate(inflater, container, false);
         return binding.getRoot();
@@ -48,247 +49,172 @@ public class ProductListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        setupLayoutManagers();
+
         loadCategories();
-        loadNewArrivals();
-        loadFeaturedProducts();
-        loadTopDiscountedProducts();
+        loadProducts();
+
+
+        binding.listingProductSearchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String searchText = s.toString().trim();
+                if (searchText.isEmpty()) {
+                    showDefaultUI();
+                } else {
+                    handleSearch(searchText);
+                }
+            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void setupLayoutManagers() {
+
+        binding.newArrivalsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        binding.topDiscountedRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        binding.featuredRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        binding.forYouRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+
+        binding.searchProductRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2));
+        binding.categoryProductRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2));
+    }
+
+    private void loadProducts() {
+        firestore.collection("products")
+                .get()
+                .addOnSuccessListener(task -> {
+                    if (task.isEmpty()) return;
+
+                    products = task.toObjects(Product.class);
+                    List<Product> newArrivals = new ArrayList<>();
+                    List<Product> featured = new ArrayList<>();
+                    List<Product> topDiscounted = new ArrayList<>();
+
+                    for (Product product : products) {
+                        if (product.isNewArrival()) newArrivals.add(product);
+                        if (product.isFeatured()) featured.add(product);
+                        if (product.isTopDiscounted()) topDiscounted.add(product);
+                    }
+
+                    if (!newArrivals.isEmpty()) {
+                        binding.newArrivalsContainer.setVisibility(View.VISIBLE);
+                        binding.newArrivalsRecyclerView.setAdapter(new ProductListingAdapter(newArrivals, this::loadSingleProduct));
+                    }
+                    if (!topDiscounted.isEmpty()) {
+                        binding.topDiscountedContainer.setVisibility(View.VISIBLE);
+                        binding.topDiscountedRecyclerView.setAdapter(new ProductListingAdapter(topDiscounted, this::loadSingleProduct));
+                    }
+                    if (!featured.isEmpty()) {
+                        binding.featuredContainer.setVisibility(View.VISIBLE);
+                        binding.featuredRecyclerView.setAdapter(new ProductListingAdapter(featured, this::loadSingleProduct));
+                    }
+
+
+                    binding.forYouRecyclerView.setAdapter(new ProductListingAdapter(products, p -> {}));
+                });
+    }
+
+    private void loadSingleProduct(Product product){
+
+        ProductDetailsFragment fragment = new ProductDetailsFragment();
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container_view, fragment)
+                .addToBackStack(null)
+                .commit();
+
     }
 
     private void loadCategories() {
-        List<String> categories = Arrays.asList("All", "Equipments", "Supplements", "Apparel", "Accessories", "Footwear", "Sports Equipment", "Fitness Equipment", "Gym Equipment");
-        binding.categoryChipGroup.removeAllViews();
+        firestore.collection("categories")
+                .orderBy("name", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(task -> {
+                    List<Category> categories = task.toObjects(Category.class);
+                    categories.add(0, Category.builder().categoryId("All").name("All").build());
 
-        for (String category : categories) {
-            Chip chip = new Chip(getContext());
-            chip.setText(category);
-            chip.setCheckable(true);
-            chip.setClickable(true);
+                    binding.categoryChipGroup.removeAllViews();
+                    for (Category category : categories) {
+                        Chip chip = new Chip(getContext());
+                        chip.setText(category.getName());
+                        chip.setTag(category.getCategoryId());
+                        chip.setCheckedIconResource(R.drawable.check);
+                        chip.setCheckedIconVisible(true);
+                        chip.setCheckable(true);
+                        chip.setClickable(true);
 
-            if(category.equals("All")){
-                chip.setChecked(true);
-            }
+                        if (category.getName().equals("All")) {
+                            chip.setChecked(true);
+                        }
 
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if(isChecked){
-                    String text = chip.getText().toString();
-                    Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
-                }
-            });
+                        chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                            if (isChecked) {
 
-            binding.categoryChipGroup.addView(chip);
+                                if (!binding.listingProductSearchInput.getText().toString().isEmpty()) {
+                                    binding.listingProductSearchInput.setText("");
+                                }
+                                loadCategoryProducts(category.getCategoryId());
+                            }
+                        });
+                        binding.categoryChipGroup.addView(chip);
+                    }
+                });
+    }
 
+    private void loadCategoryProducts(String categoryId) {
+        if (categoryId.equals("All")) {
+            showDefaultUI();
+            return;
         }
+
+        showCategoryUI();
+
+        firestore.collection("products")
+                .whereEqualTo("categoryId", categoryId)
+                .get()
+                .addOnSuccessListener(task -> {
+                    List<Product> catProducts = task.toObjects(Product.class);
+                    binding.categoryProductRecyclerView.setAdapter(new ProductListingAdapter(catProducts, p -> {}));
+                });
     }
 
-    private void loadTopDiscountedProducts() {
-        List<Product> products = new ArrayList<>();
-
-        // 1. Whey Protein
-        products.add(Product.builder()
-                .productId("P001")
-                .name("Optimum Nutrition Whey")
-                .description("High-quality protein powder for muscle recovery.")
-                .price(18500.0)
-                .images(List.of("https://images.unsplash.com/photo-1592262044987-497503fcdaa4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(25)
-                .isNewArrival(true)
-                .build());
-
-        // 2. Gym Gloves
-        products.add(Product.builder()
-                .productId("P002")
-                .name("Elite Gym Gloves")
-                .description("Breathable workout gloves with wrist support.")
-                .price(3200.0)
-                .images(List.of("https://images.unsplash.com/photo-1557127972-1c446ea89ea5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(15)
-                .isNewArrival(true)
-                .build());
-
-        // 3. Dumbbell Set
-        products.add(Product.builder()
-                .productId("P003")
-                .name("Adjustable Dumbbells")
-                .description("Perfect for home workouts, adjustable weight up to 20kg.")
-                .price(12500.0)
-                .images(List.of("https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?q=80&w=500"))
-                .stockQty(8)
-                .isNewArrival(true)
-                .build());
-
-        // 4. Pre-Workout Drink
-        products.add(Product.builder()
-                .productId("P004")
-                .name("C4 Original Pre-Workout")
-                .description("Explosive energy and focus for your training sessions.")
-                .price(9800.0)
-                .images(List.of("https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=500"))
-                .stockQty(20)
-                .isNewArrival(true)
-                .build());
-
-        // 5. Resistance Bands
-        products.add(Product.builder()
-                .productId("P005")
-                .name("Resistance Band Set")
-                .description("5-piece set for full-body stretching and strength.")
-                .price(2800.0)
-                .images(List.of("https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=500"))
-                .stockQty(50)
-                .isNewArrival(true)
-                .build());
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false);
-        binding.topDiscountedRecyclerView.setLayoutManager(layoutManager);
-
-        TopDiscountProductAdapter adapter = new TopDiscountProductAdapter(products, product -> {
-
-        });
-
-        binding.topDiscountedRecyclerView.setAdapter(adapter);
+    private void handleSearch(String query) {
+        if (products == null) return;
+        List<Product> filtered = new ArrayList<>();
+        for (Product p : products) {
+            if (p.getName().toLowerCase().contains(query.toLowerCase())) {
+                filtered.add(p);
+            }
+        }
+        showSearchUI();
+        binding.searchProductRecyclerView.setAdapter(new ProductListingAdapter(filtered, p -> {}));
     }
 
-    private void loadFeaturedProducts() {
-        List<Product> products = new ArrayList<>();
+    private void showDefaultUI() {
+        binding.searchProductRecyclerView.setVisibility(View.GONE);
+        binding.categoryProductRecyclerView.setVisibility(View.GONE);
 
-        // 1. Whey Protein
-        products.add(Product.builder()
-                .productId("P001")
-                .name("Optimum Nutrition Whey")
-                .description("High-quality protein powder for muscle recovery.")
-                .price(18500.0)
-                .images(List.of("https://images.unsplash.com/photo-1592262044987-497503fcdaa4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(25)
-                .isNewArrival(true)
-                .build());
-
-        // 2. Gym Gloves
-        products.add(Product.builder()
-                .productId("P002")
-                .name("Elite Gym Gloves")
-                .description("Breathable workout gloves with wrist support.")
-                .price(3200.0)
-                .images(List.of("https://images.unsplash.com/photo-1557127972-1c446ea89ea5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(15)
-                .isNewArrival(true)
-                .build());
-
-        // 3. Dumbbell Set
-        products.add(Product.builder()
-                .productId("P003")
-                .name("Adjustable Dumbbells")
-                .description("Perfect for home workouts, adjustable weight up to 20kg.")
-                .price(12500.0)
-                .images(List.of("https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?q=80&w=500"))
-                .stockQty(8)
-                .isNewArrival(true)
-                .build());
-
-        // 4. Pre-Workout Drink
-        products.add(Product.builder()
-                .productId("P004")
-                .name("C4 Original Pre-Workout")
-                .description("Explosive energy and focus for your training sessions.")
-                .price(9800.0)
-                .images(List.of("https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=500"))
-                .stockQty(20)
-                .isNewArrival(true)
-                .build());
-
-        // 5. Resistance Bands
-        products.add(Product.builder()
-                .productId("P005")
-                .name("Resistance Band Set")
-                .description("5-piece set for full-body stretching and strength.")
-                .price(2800.0)
-                .images(List.of("https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=500"))
-                .stockQty(50)
-                .isNewArrival(true)
-                .build());
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false);
-        binding.featuredRecyclerView.setLayoutManager(layoutManager);
-
-        FeaturedProductAdapter adapter = new FeaturedProductAdapter(products, product -> {
-
-        });
-
-        binding.featuredRecyclerView.setAdapter(adapter);
-
-
+        binding.chipGroupContainer.setVisibility(View.VISIBLE);
+        binding.productListingSection.setVisibility(View.VISIBLE);
+        binding.defaultProductListingContainer.setVisibility(View.VISIBLE);
     }
 
-    private void loadNewArrivals() {
+    private void showCategoryUI() {
+        binding.searchProductRecyclerView.setVisibility(View.GONE);
+        binding.defaultProductListingContainer.setVisibility(View.GONE);
 
-        List<Product> products = new ArrayList<>();
-
-        // 1. Whey Protein
-        products.add(Product.builder()
-                .productId("P001")
-                .name("Optimum Nutrition Whey")
-                .description("High-quality protein powder for muscle recovery.")
-                .price(18500.0)
-                .images(List.of("https://images.unsplash.com/photo-1592262044987-497503fcdaa4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(25)
-                .isNewArrival(true)
-                .build());
-
-        // 2. Gym Gloves
-        products.add(Product.builder()
-                .productId("P002")
-                .name("Elite Gym Gloves")
-                .description("Breathable workout gloves with wrist support.")
-                .price(3200.0)
-                .images(List.of("https://images.unsplash.com/photo-1557127972-1c446ea89ea5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
-                .stockQty(15)
-                .isNewArrival(true)
-                .build());
-
-        // 3. Dumbbell Set
-        products.add(Product.builder()
-                .productId("P003")
-                .name("Adjustable Dumbbells")
-                .description("Perfect for home workouts, adjustable weight up to 20kg.")
-                .price(12500.0)
-                .images(List.of("https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?q=80&w=500"))
-                .stockQty(8)
-                .isNewArrival(true)
-                .build());
-
-        // 4. Pre-Workout Drink
-        products.add(Product.builder()
-                .productId("P004")
-                .name("C4 Original Pre-Workout")
-                .description("Explosive energy and focus for your training sessions.")
-                .price(9800.0)
-                .images(List.of("https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=500"))
-                .stockQty(20)
-                .isNewArrival(true)
-                .build());
-
-        // 5. Resistance Bands
-        products.add(Product.builder()
-                .productId("P005")
-                .name("Resistance Band Set")
-                .description("5-piece set for full-body stretching and strength.")
-                .price(2800.0)
-                .images(List.of("https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=500"))
-                .stockQty(50)
-                .isNewArrival(true)
-                .build());
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false);
-        binding.newArrivalsRecyclerView.setLayoutManager(layoutManager);
-
-        NewArrivalsProductAdapter adapter = new NewArrivalsProductAdapter(products, product -> {
-
-        });
-
-        binding.newArrivalsRecyclerView.setAdapter(adapter);
-
-
+        binding.chipGroupContainer.setVisibility(View.VISIBLE);
+        binding.productListingSection.setVisibility(View.VISIBLE);
+        binding.categoryProductRecyclerView.setVisibility(View.VISIBLE);
     }
 
+    private void showSearchUI() {
+        binding.chipGroupContainer.setVisibility(View.GONE);
+        binding.productListingSection.setVisibility(View.GONE);
+
+        binding.searchProductRecyclerView.setVisibility(View.VISIBLE);
+    }
 
     @Override
     public void onDestroyView() {

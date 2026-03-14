@@ -3,6 +3,7 @@ package com.neoviz.fit_lanka_demo.fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,7 @@ import com.neoviz.fit_lanka_demo.model.User;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -111,6 +113,11 @@ public class ChallengesFragment extends Fragment {
             if (user == null) return null;
 
             Map<String, Boolean> completed = user.getCompletedChallenges();
+
+            if (completed == null) {
+                completed = new HashMap<String, Boolean>();
+            }
+
             if (completed.containsKey(challengeId)) return null;
 
             double newFitCoins = user.getFitCoins() + challenge.getRewardCoins();
@@ -124,7 +131,7 @@ public class ChallengesFragment extends Fragment {
             Toast.makeText(getContext(), "Success! +" + challenge.getRewardCoins() + " Fit-Coins", Toast.LENGTH_SHORT).show();
             loadUserDataAndChallenges(); // UI එක Refresh කරනවා
         }).addOnFailureListener(e -> {
-            Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("ChallengeFragment", "onClaimClick: ", e);
         });
     }
 
