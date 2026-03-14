@@ -191,8 +191,8 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/stars_24px"
-                            app:tint="?attr/colorSecondary" />
+                            android:src="@drawable/fit_coin"
+                            />
 
                         <TextView
                             android:id="@+id/details_coin_message"

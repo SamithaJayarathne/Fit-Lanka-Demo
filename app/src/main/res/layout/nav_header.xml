@@ -57,10 +57,9 @@
         app:layout_constraintTop_toBottomOf="@id/nav_header_name">
 
         <ImageView
-            android:layout_width="14dp"
-            android:layout_height="14dp"
-            android:src="@drawable/stars_24px"
-            app:tint="@color/md_theme_primary" />
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/fit_coin" />
 
         <TextView
             android:id="@+id/nav_header_points"

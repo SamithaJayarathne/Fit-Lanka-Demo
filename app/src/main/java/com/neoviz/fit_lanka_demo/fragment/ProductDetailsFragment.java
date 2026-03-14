@@ -3,10 +3,14 @@ package com.neoviz.fit_lanka_demo.fragment;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,15 +18,19 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.activity.HomeActivity;
 import com.neoviz.fit_lanka_demo.adapter.ProductImageSliderAdapter;
 import com.neoviz.fit_lanka_demo.databinding.FragmentProductDetailsBinding;
+import com.neoviz.fit_lanka_demo.model.CartItem;
 import com.neoviz.fit_lanka_demo.model.Product;
 import com.neoviz.fit_lanka_demo.model.User;
+import com.neoviz.fit_lanka_demo.model.WishlistItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProductDetailsFragment extends Fragment {
@@ -33,6 +41,8 @@ public class ProductDetailsFragment extends Fragment {
     private FirebaseAuth firebaseAuth;
     private User user;
     private int currentQuantity = 1;
+    private Boolean isFavorite = false;
+    private List<CartItem.SelectedAttribute> selectedAttributes = new ArrayList<>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,6 +67,7 @@ public class ProductDetailsFragment extends Fragment {
             user = documentSnapshot.toObject(User.class);
             if (user != null) {
                 calculatePricing();
+                checkIsFavorite();
             }
         });
 
@@ -110,15 +121,18 @@ public class ProductDetailsFragment extends Fragment {
 
         /// buttons
         binding.detailsFavoriteButton.setOnClickListener(v -> {
-
+            toggleWishlist();
         });
 
         binding.detailsAddToCartIconButton.setOnClickListener(v -> {
-
+            addToCart();
         });
 
         binding.detailsBuyNowButton.setOnClickListener(v -> {
 
+        });
+        binding.detailsBackButton.setOnClickListener(v -> {
+            requireActivity().getOnBackPressedDispatcher().onBackPressed();
         });
     }
 
@@ -169,6 +183,9 @@ public class ProductDetailsFragment extends Fragment {
 
     private void renderAttributes(List<Product.Attribute> attributes) {
         binding.detailsAttributesContainer.removeAllViews();
+
+        selectedAttributes.clear();
+
         for (Product.Attribute attribute : attributes) {
             TextView title = new TextView(getContext());
             title.setText("Select " + attribute.getName());
@@ -184,10 +201,148 @@ public class ProductDetailsFragment extends Fragment {
                 chip.setText(value);
                 chip.setCheckable(true);
                 chipGroup.addView(chip);
+
+                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    removeExistingAttribute(attribute.getName());
+
+                    selectedAttributes.add(new CartItem.SelectedAttribute(attribute.getName(), value));
+                });
+
             }
             binding.detailsAttributesContainer.addView(title);
             binding.detailsAttributesContainer.addView(chipGroup);
         }
+    }
+
+    private void removeExistingAttribute(String attributeName) {
+        selectedAttributes.removeIf(attribute -> attribute.getAttributeName().equals(attributeName));
+    }
+
+    private void checkIsFavorite() {
+        if (selectedProduct == null || user == null) return;
+
+        String uid = firebaseAuth.getCurrentUser().getUid();
+        String productId = selectedProduct.getProductId();
+
+        firestore.collection("users")
+                .document(uid)
+                .collection("wishlist")
+                .document(productId)
+                .addSnapshotListener((value, error) -> {
+                    if (getActivity() == null) return;
+
+                    if (value != null && value.exists()) {
+                        if (!isFavorite) {
+                            playPopAnimation(binding.detailsFavoriteButton);
+                        }
+                        isFavorite = true;
+                        binding.detailsFavoriteButton.setImageResource(R.drawable.filled_favorite);
+                    } else {
+                        if (isFavorite) {
+                            playPopAnimation(binding.detailsFavoriteButton);
+                        }
+                        isFavorite = false;
+                        binding.detailsFavoriteButton.setImageResource(R.drawable.favorite_24px);
+                    }
+                });
+    }
+
+    private void toggleWishlist() {
+        String uid = firebaseAuth.getCurrentUser().getUid();
+        String productId = selectedProduct.getProductId();
+
+        if (isFavorite) {
+            firestore.collection("users")
+                    .document(uid)
+                    .collection("wishlist")
+                    .document(productId)
+                    .delete()
+                    .addOnSuccessListener(aVoid ->
+                            Toast.makeText(getContext(), "Removed from wishlist", Toast.LENGTH_SHORT).show());
+        } else {
+            WishlistItem item = new WishlistItem(
+                    productId,
+                    selectedProduct.getName(),
+                    selectedProduct.getImages().get(0),
+                    selectedProduct.getPrice(),
+                    selectedProduct.getCategoryName(),
+                    Timestamp.now()
+            );
+
+            firestore.collection("users")
+                    .document(uid)
+                    .collection("wishlist")
+                    .document(productId)
+                    .set(item)
+                    .addOnSuccessListener(aVoid ->
+                            Toast.makeText(getContext(), "Added to wishlist", Toast.LENGTH_SHORT).show());
+        }
+    }
+
+    private void addToCart() {
+
+        playPopAnimation(binding.detailsAddToCartIconButton);
+
+        if (firebaseAuth.getCurrentUser() == null) return;
+
+        if (selectedProduct.getAttributes() != null && selectedAttributes.size() < selectedProduct.getAttributes().size()) {
+            Toast.makeText(getContext(), "Please select all options before add to cart", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = firebaseAuth.getCurrentUser().getUid();
+
+        CartItem cartItem = CartItem.builder()
+                .productId(selectedProduct.getProductId())
+                .quantity(currentQuantity)
+                .attributes(selectedAttributes)
+                .addedAt(Timestamp.now())
+                .build();
+
+        /// unique id for cart item
+        StringBuilder builder = new StringBuilder(selectedProduct.getProductId());
+
+        Log.d("AddToCart", "Builder: "+builder.toString());
+
+        for (CartItem.SelectedAttribute attribute : selectedAttributes) {
+            builder.append("_").append(attribute.getAttributeValue());
+        }
+
+        String cartItemId = builder.toString();
+        Log.d("AddToCart", "Cart Item Document ID: "+cartItemId);
+
+        firestore.collection("users")
+                .document(uid)
+                .collection("cart")
+                .document(cartItemId)
+                .set(cartItem)
+                .addOnSuccessListener(task -> {
+                    Toast.makeText(getContext(), "Added to cart", Toast.LENGTH_SHORT).show();
+                    resetUIAfterAddToCart();
+                })
+                .addOnFailureListener(error -> {
+                    Toast.makeText(getContext(), "Oops!: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void resetUIAfterAddToCart() {
+        currentQuantity = 1;
+        updateQuantityUI();
+
+        selectedAttributes.clear();
+
+        if (selectedProduct.getAttributes() != null) {
+            renderAttributes(selectedProduct.getAttributes());
+        }
+
+        calculatePricing();
+
+        binding.detailsAttributesContainer.getParent().requestChildFocus(binding.detailsAttributesContainer, binding.detailsAttributesContainer);
+    }
+
+    private void playPopAnimation(View view) {
+        Animation anim = AnimationUtils.loadAnimation(getContext(), R.anim.pop_in);
+        view.startAnimation(anim);
     }
 
     @Override

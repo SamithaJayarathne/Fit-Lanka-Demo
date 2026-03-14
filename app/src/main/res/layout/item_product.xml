@@ -76,19 +76,6 @@
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="@color/md_theme_primary"
                     android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/item_wishlist_btn"
-                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_alignParentEnd="true"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/favorite_24px"
-                    app:iconSize="18dp" />
             </RelativeLayout>
         </LinearLayout>
     </LinearLayout>
