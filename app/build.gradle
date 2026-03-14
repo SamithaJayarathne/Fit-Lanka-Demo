@@ -78,4 +78,7 @@ dependencies {
 
     // swip refresh layout
     implementation libs.swiperefreshlayout
+
+    //dots indicator
+    implementation("com.tbuonomo:dotsindicator:5.1.0")
 }

@@ -36,7 +36,12 @@ public class ProductListingAdapter extends RecyclerView.Adapter<ProductListingAd
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Product product = products.get(position);
         holder.productName.setText(product.getName());
-        holder.productPrice.setText("LKR. " + product.getPrice());
+        holder.productPrice.setText(String.format("LKR. %,.2f", product.getPrice()));
+        holder.productCategory.setText(product.getCategoryName());
+
+        if (product.getMaxPercentage() != null && product.getMaxPercentage() > 0) {
+            holder.productDiscountText.setText("Up to " + product.getMaxPercentage() + "% OFF");
+        }
 
         Glide.with(holder.itemView.getContext())
                 .load(product.getImages().get(0))

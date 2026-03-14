@@ -119,6 +119,12 @@ public class ProductListFragment extends Fragment {
     private void loadSingleProduct(Product product){
 
         ProductDetailsFragment fragment = new ProductDetailsFragment();
+
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("selectedProduct", product);
+
+        fragment.setArguments(bundle);
+
         requireActivity().getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container_view, fragment)
                 .addToBackStack(null)
