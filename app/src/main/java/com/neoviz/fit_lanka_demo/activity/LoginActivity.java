@@ -95,7 +95,6 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-
     private void signInWithGoogle() {
         binding.loginErrorText.setVisibility(View.GONE);
         setGoogleLoading(true);

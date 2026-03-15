@@ -3,6 +3,7 @@ package com.neoviz.fit_lanka_demo.fragment;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +25,8 @@ import com.google.firebase.firestore.WriteBatch;
 import com.neoviz.fit_lanka_demo.activity.HomeActivity;
 import com.neoviz.fit_lanka_demo.activity.ProfileActivity;
 import com.neoviz.fit_lanka_demo.adapter.MinimalOrderAdapter;
+import com.neoviz.fit_lanka_demo.api.EmailServiceApi;
+import com.neoviz.fit_lanka_demo.client.RetrofitClient;
 import com.neoviz.fit_lanka_demo.databinding.FragmentCheckoutBinding;
 import com.neoviz.fit_lanka_demo.model.CartItem;
 import com.neoviz.fit_lanka_demo.model.Order;
@@ -31,13 +34,19 @@ import com.neoviz.fit_lanka_demo.model.Product;
 import com.neoviz.fit_lanka_demo.model.User;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import lk.payhere.androidsdk.PHConstants;
 import lk.payhere.androidsdk.PHMainActivity;
 import lk.payhere.androidsdk.PHResponse;
 import lk.payhere.androidsdk.model.InitRequest;
 import lk.payhere.androidsdk.model.StatusResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class CheckoutFragment extends Fragment {
 
@@ -49,10 +58,9 @@ public class CheckoutFragment extends Fragment {
     private List<CartItem> orderItems = new ArrayList<>();
     private double finalTotal = 0.0;
     private User currentUser;
-
-    // Coins වලට අදාළ variables
     private int claimedCoins = 0;
     private boolean isCoinsClaimed = false;
+    private boolean isDirectBuy = false;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -66,29 +74,30 @@ public class CheckoutFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Bundle එකෙන් දත්ත ලබා ගැනීම
+        setupRecyclerView();
+        setupLogic();
+        loadUserData();
+
         if (getArguments() != null) {
+            isDirectBuy = getArguments().getBoolean("isDirectBuy", false);
             finalTotal = getArguments().getDouble("finalTotal", 0.0);
             isCoinsClaimed = getArguments().getBoolean("isCoinsClaimed", false);
             claimedCoins = getArguments().getInt("claimedCoinsAmount", 0);
 
             binding.tvFinalTotal.setText(String.format("Rs. %,.2f", finalTotal));
 
-            if (isCoinsClaimed && claimedCoins > 0) {
-                Log.d("CHECKOUT", "Coins to be deducted: " + claimedCoins);
+            if (isDirectBuy) {
+                setupDirectOrderData();
+            } else {
+                loadCartData();
             }
         }
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
-        setupRecyclerView();
-        setupLogic();
-        loadUserData();
-        loadCartData();
-
         binding.btnPlaceOrder.setOnClickListener(v -> {
             if (currentUser == null) {
-                Toast.makeText(getContext(), "Please wait, loading user data...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Loading user data...", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -100,19 +109,34 @@ public class CheckoutFragment extends Fragment {
         });
     }
 
+    private void setupDirectOrderData() {
+        Product directProduct = (Product) getArguments().getSerializable("directProduct");
+        int qty = getArguments().getInt("directQuantity");
+        List<CartItem.SelectedAttribute> attrs = (List<CartItem.SelectedAttribute>) getArguments().getSerializable("directAttributes");
+
+        if (directProduct != null) {
+            orderItems.clear();
+            CartItem directItem = CartItem.builder()
+                    .productId(directProduct.getProductId())
+                    .quantity(qty)
+                    .attributes(attrs)
+                    .build();
+            orderItems.add(directItem);
+            adapter.notifyDataSetChanged();
+        }
+    }
+
     private void runPayhereGateway() {
         InitRequest req = new InitRequest();
         req.setSandBox(true);
         req.setMerchantId("1223969");
         req.setMerchantSecret("MzEzMDA2ODIwODE0NzgxMTA5NDc5NjY4NTgxNDExMzIxMTE1ODU0");
-
         req.setCurrency("LKR");
         req.setAmount(finalTotal);
         req.setOrderId("ORDER_" + System.currentTimeMillis());
         req.setItemsDescription("Fitness Products Purchase");
 
         req.getCustomer().setFirstName(currentUser.getName());
-        req.getCustomer().setLastName("");
         req.getCustomer().setEmail(currentUser.getEmail());
         req.getCustomer().setPhone(currentUser.getContactNumber());
 
@@ -134,19 +158,12 @@ public class CheckoutFragment extends Fragment {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Intent data = result.getData();
-                    if (data.hasExtra(PHConstants.INTENT_EXTRA_RESULT)) {
-                        PHResponse<StatusResponse> response = (PHResponse<StatusResponse>) data.getSerializableExtra(PHConstants.INTENT_EXTRA_RESULT);
-                        if (response != null && response.isSuccess()) {
-                            Log.i("PAYHERE", "Payment Success");
-                            placeOrder();
-                        } else {
-                            Log.e("PAYHERE", "Payment Failed");
-                            Toast.makeText(getContext(), "Payment Failed. Please try again.", Toast.LENGTH_SHORT).show();
-                        }
+                    PHResponse<StatusResponse> response = (PHResponse<StatusResponse>) result.getData().getSerializableExtra(PHConstants.INTENT_EXTRA_RESULT);
+                    if (response != null && response.isSuccess()) {
+                        placeOrder();
+                    } else {
+                        Toast.makeText(getContext(), "Payment Failed", Toast.LENGTH_SHORT).show();
                     }
-                } else if (result.getResultCode() == Activity.RESULT_CANCELED) {
-                    Log.w("PAYHERE", "Payment Cancelled");
                 }
             }
     );
@@ -178,9 +195,7 @@ public class CheckoutFragment extends Fragment {
         firestore.collection("users").document(firebaseAuth.getUid())
                 .get().addOnSuccessListener(doc -> {
                     currentUser = doc.toObject(User.class);
-                    if (currentUser != null) {
-                        displayShippingAddress();
-                    }
+                    if (currentUser != null) displayShippingAddress();
                 });
     }
 
@@ -188,10 +203,7 @@ public class CheckoutFragment extends Fragment {
         if (currentUser.getAddresses() != null && !currentUser.getAddresses().isEmpty()) {
             User.Address shipping = null;
             for (User.Address a : currentUser.getAddresses()) {
-                if ("Shipping".equalsIgnoreCase(a.getAddressType())) {
-                    shipping = a;
-                    break;
-                }
+                if ("Shipping".equalsIgnoreCase(a.getAddressType())) { shipping = a; break; }
             }
             if (shipping == null) shipping = currentUser.getAddresses().get(0);
 
@@ -205,16 +217,12 @@ public class CheckoutFragment extends Fragment {
         if (currentUser.getAddresses() != null) {
             User.Address billing = null;
             for (User.Address a : currentUser.getAddresses()) {
-                if ("Billing".equalsIgnoreCase(a.getAddressType())) {
-                    billing = a;
-                    break;
-                }
+                if ("Billing".equalsIgnoreCase(a.getAddressType())) { billing = a; break; }
             }
             if (billing != null) {
                 binding.tvBillingAddress.setText(billing.getAddressLine1() + ", " + billing.getCity());
                 binding.btnAddBillingAddress.setVisibility(View.GONE);
             } else {
-                binding.tvBillingAddress.setText("No Billing Address found");
                 binding.btnAddBillingAddress.setVisibility(View.VISIBLE);
             }
         }
@@ -240,45 +248,27 @@ public class CheckoutFragment extends Fragment {
         Toast.makeText(getContext(), "Processing order...", Toast.LENGTH_SHORT).show();
 
         List<Order.OrderItem> orderItemsList = new ArrayList<>();
-
-        for (int i = 0; i < orderItems.size(); i++) {
-            CartItem cartItem = orderItems.get(i);
-
+        for (CartItem cartItem : orderItems) {
             firestore.collection("products").document(cartItem.getProductId()).get()
                     .addOnSuccessListener(pDoc -> {
                         if (pDoc.exists()) {
                             Product product = pDoc.toObject(Product.class);
                             List<Order.OrderItem.Attribute> selectedAttributes = new ArrayList<>();
-
                             if (cartItem.getAttributes() != null) {
                                 for (CartItem.SelectedAttribute cartAttr : cartItem.getAttributes()) {
-                                    selectedAttributes.add(new Order.OrderItem.Attribute(
-                                            cartAttr.getAttributeName(),
-                                            cartAttr.getAttributeValue()
-                                    ));
+                                    selectedAttributes.add(new Order.OrderItem.Attribute(cartAttr.getAttributeName(), cartAttr.getAttributeValue()));
                                 }
                             }
-
-                            Order.OrderItem orderItem = Order.OrderItem.builder()
+                            orderItemsList.add(Order.OrderItem.builder()
                                     .productId(cartItem.getProductId())
                                     .productName(pDoc.getString("name"))
-                                    .productImage(product != null && product.getImages() != null && !product.getImages().isEmpty()
-                                            ? product.getImages().get(0) : null)
+                                    .productImage(product != null && product.getImages() != null && !product.getImages().isEmpty() ? product.getImages().get(0) : null)
                                     .quantity(cartItem.getQuantity())
                                     .unitPrice(pDoc.getDouble("price") != null ? pDoc.getDouble("price") : 0.0)
                                     .attributes(selectedAttributes)
-                                    .build();
-
-                            orderItemsList.add(orderItem);
+                                    .build());
                         }
-
-                        if (orderItemsList.size() == orderItems.size()) {
-                            saveOrderToFirestore(orderItemsList);
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("CHECKOUT", "Product fetch failed: " + e.getMessage());
-                        binding.btnPlaceOrder.setEnabled(true);
+                        if (orderItemsList.size() == orderItems.size()) saveOrderToFirestore(orderItemsList);
                     });
         }
     }
@@ -286,54 +276,131 @@ public class CheckoutFragment extends Fragment {
     private void saveOrderToFirestore(List<Order.OrderItem> orderItemsList) {
         User.Address shipRaw = null;
         if (currentUser.getAddresses() != null && !currentUser.getAddresses().isEmpty()) {
-            shipRaw = currentUser.getAddresses().get(0);
+            for (User.Address a : currentUser.getAddresses()) {
+                if ("Shipping".equalsIgnoreCase(a.getAddressType())) { shipRaw = a; break; }
+            }
+            if (shipRaw == null) shipRaw = currentUser.getAddresses().get(0);
+        }
+        if (shipRaw == null) {
+            Toast.makeText(getContext(), "Please add a shipping address", Toast.LENGTH_SHORT).show();
+            binding.btnPlaceOrder.setEnabled(true);
+            return;
         }
 
-        User.Address billRaw = binding.cbSameAddress.isChecked() ? shipRaw : shipRaw;
-
         String orderId = firestore.collection("orders").document().getId();
-        String method = binding.rbCOD.isChecked() ? "Cash on Delivery" : "Card Payment";
-        String pStatus = binding.rbCOD.isChecked() ? "Pending" : "Paid";
-
         Order finalOrder = Order.builder()
                 .orderId(orderId).userId(firebaseAuth.getUid()).totalAmount(finalTotal)
                 .status("Pending").orderDate(com.google.firebase.Timestamp.now())
-                .paymentMethod(method).paymentStatus(pStatus)
+                .paymentMethod(binding.rbCOD.isChecked() ? "Cash on Delivery" : "Card Payment")
+                .paymentStatus(binding.rbCOD.isChecked() ? "Pending" : "Paid")
                 .shippingAddress(convertToOrderAddress(shipRaw))
-                .billingAddress(convertToOrderAddress(billRaw))
                 .orderItems(orderItemsList).build();
 
         firestore.collection("orders").document(orderId).set(finalOrder)
-                .addOnSuccessListener(aVoid -> clearCartAndFinish());
+                .addOnSuccessListener(aVoid -> {
+                    sendOrderConfirmationEmail(finalOrder);
+                    clearCartAndFinish();
+                })
+                .addOnFailureListener(e -> binding.btnPlaceOrder.setEnabled(true));
     }
 
     private void clearCartAndFinish() {
         String uid = firebaseAuth.getUid();
-        if (uid == null) return;
-
-        firestore.collection("users").document(uid).collection("cart").get()
-                .addOnSuccessListener(query -> {
-                    WriteBatch batch = firestore.batch();
-
-                    // 1. Cart එකේ Items ටික අයින් කරනවා
-                    for (DocumentSnapshot doc : query) {
-                        batch.delete(doc.getReference());
-                    }
-
-                    // 2. Claim කරපු Coins ටික Database එකෙන් අඩු කරනවා
-                    if (isCoinsClaimed && claimedCoins > 0) {
-                        // 'fitCoins' කියන field එක තමයි ඔයාගේ User model එකේ තියෙන නම කියලා හිතනවා
-                        batch.update(firestore.collection("users").document(uid),
-                                "fitCoins", FieldValue.increment(-claimedCoins));
-                    }
-
-                    // 3. එකවර (Atomically) ඔක්කොම Update කරනවා
-                    batch.commit().addOnSuccessListener(aVoid -> {
-                        Toast.makeText(getContext(), "Order Placed Successfully!", Toast.LENGTH_LONG).show();
-                        requireActivity().onBackPressed();
-                    }).addOnFailureListener(e -> {
-                        Log.e("CHECKOUT", "Batch commit failed: " + e.getMessage());
+        WriteBatch batch = firestore.batch();
+        if (isCoinsClaimed && claimedCoins > 0) {
+            batch.update(firestore.collection("users").document(uid), "fitCoins", FieldValue.increment(-claimedCoins));
+        }
+        if (!isDirectBuy) {
+            firestore.collection("users").document(uid).collection("cart").get()
+                    .addOnSuccessListener(query -> {
+                        for (DocumentSnapshot doc : query) batch.delete(doc.getReference());
+                        executeBatch(batch);
                     });
+        } else {
+            executeBatch(batch);
+        }
+    }
+
+    private void executeBatch(WriteBatch batch) {
+        batch.commit().addOnSuccessListener(aVoid -> {
+            // Success Toast පෙන්වීම (Application context එක භාවිතයෙන්)
+            if (getActivity() != null) {
+                Toast.makeText(getActivity().getApplicationContext(), "Order Placed Successfully!", Toast.LENGTH_LONG).show();
+
+                // තත්පර 1.5ක් පරක්කු වී පිටවීම
+                new Handler().postDelayed(() -> {
+                    if (isAdded()) {
+                        requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                    }
+                }, 1500);
+            }
+        });
+    }
+
+    private void sendOrderConfirmationEmail(Order order) {
+        EmailServiceApi emailApi = RetrofitClient.getInstance().create(EmailServiceApi.class);
+        Map<String, Object> emailBody = new HashMap<>();
+        emailBody.put("sender", Map.of("name", "Fit Lanka", "email", "samithaai2003@gmail.com"));
+        emailBody.put("to", List.of(Map.of("name", currentUser.getName(), "email", currentUser.getEmail())));
+        emailBody.put("subject", "Order Confirmed: #" + order.getOrderId());
+
+
+        StringBuilder itemsHtml = new StringBuilder();
+        for (Order.OrderItem item : order.getOrderItems()) {
+            itemsHtml.append("<tr>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #eee;\">").append(item.getProductName()).append("</td>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: center;\">").append(item.getQuantity()).append("</td>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #eee; text-align: right;\">Rs. ").append(String.format("%,.2f", item.getUnitPrice())).append("</td>")
+                    .append("</tr>");
+        }
+
+        String htmlContent = "<div style=\"font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;\">" +
+                "  <div style=\"background-color: #000; padding: 25px; text-align: center;\">" +
+                "    <h1 style=\"color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 3px;\">Fit Lanka</h1>" +
+                "  </div>" +
+                "  <div style=\"padding: 30px; color: #333;\">" +
+                "    <h2 style=\"color: #27ae60; margin-top: 0;\">Order Confirmed!</h2>" +
+                "    <p>Hi <b>" + currentUser.getName() + "</b>, Your order has been placed successfully.</p>" +
+
+                "    <div style=\"background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 14px;\">" +
+                "      <p style=\"margin: 5px 0;\"><b>Order ID:</b> #" + order.getOrderId() + "</p>" +
+                "      <p style=\"margin: 5px 0;\"><b>Payment:</b> " + order.getPaymentMethod() + "</p>" +
+                "    </div>" +
+
+                "    <table style=\"width: 100%; border-collapse: collapse; margin: 20px 0;\">" +
+                "      <thead>" +
+                "        <tr style=\"background-color: #f2f2f2;\">" +
+                "          <th style=\"padding: 10px; text-align: left;\">Item</th>" +
+                "          <th style=\"padding: 10px; text-align: center;\">Qty</th>" +
+                "          <th style=\"padding: 10px; text-align: right;\">Price</th>" +
+                "        </tr>" +
+                "      </thead>" +
+                "      <tbody>" + itemsHtml.toString() + "</tbody>" +
+                "    </table>" +
+
+                "    <div style=\"text-align: right; margin-top: 20px;\">" +
+                "      <p style=\"margin: 0; color: #777;\">Total Amount:</p>" +
+                "      <p style=\"font-size: 22px; color: #000; font-weight: bold; margin: 5px 0;\">Rs. " + String.format("%,.2f", order.getTotalAmount()) + "</p>" +
+                "    </div>" +
+
+                "    <div style=\"margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;\">" +
+                "       <p style=\"font-size: 14px; margin: 0;\"><b>Shipping Address:</b></p>" +
+                "       <p style=\"font-size: 13px; color: #666; margin: 5px 0;\">" + order.getShippingAddress().getAddressLine1() + ", " + order.getShippingAddress().getCity() + "</p>" +
+                "    </div>" +
+                "  </div>" +
+                "  <div style=\"background-color: #f1f1f1; padding: 20px; text-align: center; font-size: 12px; color: #777;\">" +
+                "    <p>© 2026 Fit Lanka Fitness Store. All Rights Reserved.</p>" +
+                "  </div>" +
+                "</div>";
+
+        emailBody.put("htmlContent", htmlContent);
+
+        String apiKey = "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";
+
+        emailApi.sendEmail(apiKey, emailBody)
+                .enqueue(new Callback<Void>() {
+                    @Override public void onResponse(Call<Void> call, Response<Void> response) {}
+                    @Override public void onFailure(Call<Void> call, Throwable t) {}
                 });
     }
 
@@ -347,23 +414,15 @@ public class CheckoutFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadUserData();
-        if (requireActivity() instanceof HomeActivity) {
-            ((HomeActivity) requireActivity()).setNavigationVisibility(View.GONE);
-        }
+        if (requireActivity() instanceof HomeActivity) ((HomeActivity) requireActivity()).setNavigationVisibility(View.GONE);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (requireActivity() instanceof HomeActivity) {
-            ((HomeActivity) requireActivity()).setNavigationVisibility(View.VISIBLE);
-        }
+        if (requireActivity() instanceof HomeActivity) ((HomeActivity) requireActivity()).setNavigationVisibility(View.VISIBLE);
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-    }
+    public void onDestroyView() { super.onDestroyView(); binding = null; }
 }

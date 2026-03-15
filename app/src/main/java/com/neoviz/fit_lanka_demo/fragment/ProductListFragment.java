@@ -13,6 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSnapHelper;
+import androidx.recyclerview.widget.SnapHelper;
 
 import com.google.android.material.chip.Chip;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -98,21 +100,31 @@ public class ProductListFragment extends Fragment {
                         if (product.isTopDiscounted()) topDiscounted.add(product);
                     }
 
+
+
                     if (!newArrivals.isEmpty()) {
                         binding.newArrivalsContainer.setVisibility(View.VISIBLE);
+                        SnapHelper snapHelper = new LinearSnapHelper();
+                        snapHelper.attachToRecyclerView(binding.newArrivalsRecyclerView);
                         binding.newArrivalsRecyclerView.setAdapter(new ProductListingAdapter(newArrivals, this::loadSingleProduct));
                     }
                     if (!topDiscounted.isEmpty()) {
                         binding.topDiscountedContainer.setVisibility(View.VISIBLE);
+                        SnapHelper snapHelper = new LinearSnapHelper();
+                        snapHelper.attachToRecyclerView(binding.topDiscountedRecyclerView);
                         binding.topDiscountedRecyclerView.setAdapter(new ProductListingAdapter(topDiscounted, this::loadSingleProduct));
                     }
                     if (!featured.isEmpty()) {
                         binding.featuredContainer.setVisibility(View.VISIBLE);
+                        SnapHelper snapHelper = new LinearSnapHelper();
+                        snapHelper.attachToRecyclerView(binding.featuredRecyclerView);
                         binding.featuredRecyclerView.setAdapter(new ProductListingAdapter(featured, this::loadSingleProduct));
                     }
 
 
-                    binding.forYouRecyclerView.setAdapter(new ProductListingAdapter(products, p -> {}));
+                    SnapHelper snapHelper = new LinearSnapHelper();
+                    snapHelper.attachToRecyclerView(binding.forYouRecyclerView);
+                    binding.forYouRecyclerView.setAdapter(new ProductListingAdapter(products, this::loadSingleProduct));
                 });
     }
 

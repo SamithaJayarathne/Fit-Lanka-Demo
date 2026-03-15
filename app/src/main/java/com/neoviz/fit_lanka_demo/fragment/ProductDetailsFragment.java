@@ -15,17 +15,25 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSnapHelper;
+import androidx.recyclerview.widget.SnapHelper;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.activity.HomeActivity;
 import com.neoviz.fit_lanka_demo.adapter.ProductImageSliderAdapter;
+import com.neoviz.fit_lanka_demo.adapter.ProductListingAdapter;
+import com.neoviz.fit_lanka_demo.adapter.ReviewAdapter;
 import com.neoviz.fit_lanka_demo.databinding.FragmentProductDetailsBinding;
 import com.neoviz.fit_lanka_demo.model.CartItem;
+import com.neoviz.fit_lanka_demo.model.Feedback;
 import com.neoviz.fit_lanka_demo.model.Product;
 import com.neoviz.fit_lanka_demo.model.User;
 import com.neoviz.fit_lanka_demo.model.WishlistItem;
@@ -97,6 +105,9 @@ public class ProductDetailsFragment extends Fragment {
             binding.detailsDiscountBadge.setVisibility(View.GONE);
         }
 
+        /// related products
+        loadRelatedProducts(selectedProduct.getCategoryId(), selectedProduct.getProductId());
+
 
         binding.btnIncreaseQuantity.setOnClickListener(v -> {
             if (currentQuantity < selectedProduct.getStockQty()) {
@@ -117,6 +128,7 @@ public class ProductDetailsFragment extends Fragment {
         }
 
         calculatePricing();
+        loadReviews(selectedProduct.getProductId());
 
 
         /// buttons
@@ -129,7 +141,40 @@ public class ProductDetailsFragment extends Fragment {
         });
 
         binding.detailsBuyNowButton.setOnClickListener(v -> {
+            if (firebaseAuth.getCurrentUser() == null) return;
 
+            if (selectedProduct.getAttributes() != null && selectedAttributes.size() < selectedProduct.getAttributes().size()) {
+                Toast.makeText(getContext(), "Please select all options before buying", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            double unitPrice = selectedProduct.getPrice();
+            double totalOriginalPrice = unitPrice * currentQuantity;
+            float maxPercent = selectedProduct.getMaxPercentage() != null ? selectedProduct.getMaxPercentage() : 0;
+            double maxAllowedDiscount = totalOriginalPrice * (maxPercent / 100.0);
+            double userCoins = (user != null) ? user.getFitCoins() : 0;
+
+            double applicableDiscount = Math.min(userCoins, maxAllowedDiscount);
+            double grandTotal = (totalOriginalPrice + 500.0) - applicableDiscount; /// 500.0 is delivery fee
+
+            CheckoutFragment checkoutFragment = new CheckoutFragment();
+            Bundle bundle = new Bundle();
+
+            bundle.putBoolean("isDirectBuy", true);
+            bundle.putSerializable("directProduct", selectedProduct);
+            bundle.putInt("directQuantity", currentQuantity);
+            bundle.putSerializable("directAttributes", (ArrayList<CartItem.SelectedAttribute>) selectedAttributes);
+
+            bundle.putDouble("finalTotal", grandTotal);
+            bundle.putBoolean("isCoinsClaimed", applicableDiscount > 0);
+            bundle.putInt("claimedCoinsAmount", (int) applicableDiscount);
+
+            checkoutFragment.setArguments(bundle);
+
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container_view, checkoutFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
         binding.detailsBackButton.setOnClickListener(v -> {
             requireActivity().getOnBackPressedDispatcher().onBackPressed();
@@ -337,12 +382,98 @@ public class ProductDetailsFragment extends Fragment {
 
         calculatePricing();
 
-        binding.detailsAttributesContainer.getParent().requestChildFocus(binding.detailsAttributesContainer, binding.detailsAttributesContainer);
+        binding.detailsAttributesContainer
+                .getParent()
+                .requestChildFocus(binding.detailsAttributesContainer, binding.detailsAttributesContainer);
     }
 
     private void playPopAnimation(View view) {
         Animation anim = AnimationUtils.loadAnimation(getContext(), R.anim.pop_in);
         view.startAnimation(anim);
+    }
+
+    private void loadReviews(String productId) {
+        firestore.collection("products").document(productId)
+                .collection("reviews")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(qds -> {
+                    List<Feedback> reviews = new ArrayList<>();
+                    float totalRating = 0;
+
+                    for (DocumentSnapshot doc : qds) {
+                        Feedback f = doc.toObject(Feedback.class);
+                        if (f != null) {
+                            reviews.add(f);
+                            totalRating += f.getRating();
+                        }
+                    }
+
+                    if (reviews.isEmpty()) {
+                        binding.tvNoReviews.setVisibility(View.VISIBLE);
+                        binding.rvProductReviews.setVisibility(View.GONE);
+                    } else {
+                        binding.tvNoReviews.setVisibility(View.GONE);
+                        binding.rvProductReviews.setVisibility(View.VISIBLE);
+
+
+                        ReviewAdapter adapter = new ReviewAdapter(reviews);
+                        binding.rvProductReviews.setLayoutManager(new LinearLayoutManager(getContext()));
+                        binding.rvProductReviews.setAdapter(adapter);
+
+                        float avg = totalRating / reviews.size();
+                        binding.detailsRatingBar.setRating(avg);
+                        binding.detailsProductRatingValue.setText("(" + String.format("%.1f", avg) + ")");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ProductDetails", "Review load error: " + e.getMessage());
+                });
+    }
+
+    private void loadRelatedProducts(String category, String currentProductId) {
+        firestore.collection("products")
+                .whereEqualTo("categoryId", category)
+                .limit(10)
+                .get()
+                .addOnSuccessListener(qds -> {
+                    List<Product> relatedList = new ArrayList<>();
+                    for (DocumentSnapshot doc : qds) {
+                        Product p = doc.toObject(Product.class);
+
+                        if (p != null && !doc.getId().equals(currentProductId)) {
+                            p.setProductId(doc.getId());
+                            relatedList.add(p);
+                        }
+                    }
+
+                    if (!relatedList.isEmpty()) {
+
+                        ProductListingAdapter adapter = new ProductListingAdapter(relatedList, product -> {
+                            openProductDetails(product.getProductId());
+                        });
+
+
+                        SnapHelper snapHelper = new LinearSnapHelper();
+                        snapHelper.attachToRecyclerView(binding.rvRelatedProducts);
+
+                        binding.rvRelatedProducts.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+                        binding.rvRelatedProducts.setAdapter(adapter);
+                    }
+                });
+    }
+
+    private void openProductDetails(String id) {
+        Bundle b = new Bundle();
+        b.putString("productId", id);
+        ProductDetailsFragment fragment = new ProductDetailsFragment();
+        fragment.setArguments(b);
+
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container_view, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override

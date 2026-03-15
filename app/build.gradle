@@ -80,11 +80,15 @@ dependencies {
     implementation libs.swiperefreshlayout
 
     //dots indicator
-    implementation("com.tbuonomo:dotsindicator:5.1.0")
+    implementation(libs.dotsindicator)
 
     //payhere
-    implementation 'com.github.PayHereDevs:payhere-android-sdk:v3.0.18'
+    implementation libs.payhere.android.sdk
 
     //gson
-    implementation 'com.google.code.gson:gson:2.8.0'
+    implementation libs.gson
+
+    //retrofit
+    implementation libs.retrofit
+    implementation libs.converter.gson
 }
