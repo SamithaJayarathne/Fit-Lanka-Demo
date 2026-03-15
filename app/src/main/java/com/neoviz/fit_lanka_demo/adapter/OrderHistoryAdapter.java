@@ -5,12 +5,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.card.MaterialCardView;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.model.Order;
+
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapter.ViewHolder> {
     private List<Order> orders;
@@ -21,7 +27,8 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
         this.listener = listener;
     }
 
-    @NonNull @Override
+    @NonNull
+    @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup p, int vt) {
         return new ViewHolder(LayoutInflater.from(p.getContext()).inflate(R.layout.item_order, p, false));
     }
@@ -29,33 +36,44 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
         Order o = orders.get(pos);
-        h.id.setText("#" + o.getOrderId());
 
-        String status = o.getStatus().toLowerCase();
+        // 1. Firebase Timestamp එක Format කිරීම (Ex: Oct 24, 2026)
+        if (o.getOrderDate() != null) {
+            SimpleDateFormat sfd = new SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault());
+            String dateStr = sfd.format(o.getOrderDate().toDate());
+            h.date.setText(dateStr);
+        }
+
+        // 2. Item Count එක
+        if (o.getOrderItems() != null) {
+            int count = o.getOrderItems().size();
+            h.itemCount.setText(count + (count > 1 ? " Items" : " Item"));
+        }
+
+        // 3. Total Amount
+        h.total.setText(String.format("LKR %,.2f", o.getTotalAmount()));
+
+        // 4. Status Styling
+        String status = (o.getStatus() != null) ? o.getStatus().toLowerCase() : "pending";
         h.status.setText(status.toUpperCase());
-        h.total.setText(String.format("Total: Rs. %,.2f", o.getTotalAmount()));
 
-        // Status එක අනුව පාට වෙනස් කිරීම
         int bgColor, textColor;
-
         switch (status) {
             case "delivered":
-                bgColor = Color.parseColor("#E8F5E9"); // Light Green
-                textColor = Color.parseColor("#2E7D32"); // Dark Green
+                bgColor = Color.parseColor("#E8F5E9");
+                textColor = Color.parseColor("#2E7D32");
                 break;
             case "cancelled":
-                bgColor = Color.parseColor("#FFEBEE"); // Light Red
-                textColor = Color.parseColor("#C62828"); // Dark Red
+                bgColor = Color.parseColor("#FFEBEE");
+                textColor = Color.parseColor("#C62828");
                 break;
-            default: // "pending" සහ වෙනත් ඕනෑම එකකට
-                bgColor = Color.parseColor("#FFF8E1"); // Light Gold/Yellow
-                textColor = Color.parseColor("#F57F17"); // Dark Gold
+            default:
+                bgColor = Color.parseColor("#FFF8E1");
+                textColor = Color.parseColor("#F57F17");
                 break;
         }
 
-        // TextView එකේ background එකට පාට දෙනවා
-        h.status.getBackground().setTint(bgColor);
-        // Text එකේ පාට වෙනස් කරනවා
+        h.statusBadgeContainer.setCardBackgroundColor(bgColor);
         h.status.setTextColor(textColor);
 
         // Inner RecyclerView setup
@@ -63,15 +81,25 @@ public class OrderHistoryAdapter extends RecyclerView.Adapter<OrderHistoryAdapte
         h.rvInner.setAdapter(new InnerProductAdapter(o.getOrderItems(), o.getOrderId(), listener));
     }
 
-    @Override public int getItemCount() { return orders.size(); }
+    @Override
+    public int getItemCount() {
+        return orders != null ? orders.size() : 0;
+    }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView id, status, total; RecyclerView rvInner;
-        public ViewHolder(View v) { super(v);
-            id = v.findViewById(R.id.tvOrderId);
+        TextView status, total, date, itemCount;
+        RecyclerView rvInner;
+        MaterialCardView statusBadgeContainer;
+
+        public ViewHolder(View v) {
+            super(v);
+            // ID පේළිය අයින් කරා
             status = v.findViewById(R.id.tvOrderStatus);
             total = v.findViewById(R.id.tvOrderTotal);
+            date = v.findViewById(R.id.tvOrderDate);
+            itemCount = v.findViewById(R.id.tvItemCount);
             rvInner = v.findViewById(R.id.rvOrderItemsInner);
+            statusBadgeContainer = v.findViewById(R.id.statusBadgeContainer);
         }
     }
 }

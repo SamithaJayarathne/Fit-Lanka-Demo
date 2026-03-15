@@ -22,6 +22,8 @@ public class Order {
     private Address billingAddress;
     private String paymentStatus;
     private List<OrderItem> orderItems;
+    private List<String> reviewedProducts;
+
 
     @Data
     @AllArgsConstructor
@@ -33,6 +35,7 @@ public class Order {
         private String productImage;
         private int quantity;
         private double unitPrice;
+        private boolean reviewed;
         private List<Attribute> attributes;
 
         @Data

@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,18 +18,29 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.databinding.FragmentHomeBinding;
+import com.neoviz.fit_lanka_demo.model.Tip;
 import com.neoviz.fit_lanka_demo.model.User;
 import com.neoviz.fit_lanka_demo.util.AppUtils;
+import com.neoviz.fit_lanka_demo.util.CustomMarkerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 public class HomeFragment extends Fragment {
 
@@ -38,13 +50,11 @@ public class HomeFragment extends Fragment {
     private SharedPreferences prefs;
     private List<User.DailySteps> historyData = new ArrayList<>();
 
-    // Prefs වල අගය වෙනස් වන විට UI එක සහ Chart එක update කිරීම
     private final SharedPreferences.OnSharedPreferenceChangeListener prefsListener = (sharedPrefs, key) -> {
         if ("currentSteps".equals(key)) {
             int steps = sharedPrefs.getInt("currentSteps", 0);
             if (isAdded() && binding != null) {
                 updateUI(steps);
-                // පියවර වෙනස් වෙද්දී chart එකේ අද දවසත් update කරනවා
                 loadChartWithRealData(historyData, steps);
             }
         }
@@ -69,6 +79,18 @@ public class HomeFragment extends Fragment {
         updateUI(currentSteps);
 
         fetchUserDataFromFirestore(currentSteps);
+
+        binding.btnHealthTips.setOnClickListener(v -> {
+            showHealthTips();
+        });
+        binding.btnChallenges.setOnClickListener(v -> {
+            requireActivity()
+                    .getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container_view, new ChallengesFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
     }
 
     private void checkPermissions() {
@@ -90,7 +112,6 @@ public class HomeFragment extends Fragment {
                         int target = user.getDailyStepTarget() > 0 ? user.getDailyStepTarget() : 5000;
                         binding.progressBar.setMax(target);
 
-                        // ඉතිහාස දත්ත (History) save කරගන්නවා පස්සේ පාවිච්චි කරන්න
                         if (user.getDailySteps() != null) {
                             this.historyData = user.getDailySteps();
                         }
@@ -116,51 +137,101 @@ public class HomeFragment extends Fragment {
 
         ArrayList<BarEntry> entries = new ArrayList<>();
         float[] stepsArray = new float[7];
+        String[] days = new String[7];
 
-        // කලින් දින 6 ක දත්ත පිරවීම
-        if (history != null && !history.isEmpty()) {
-            int historySize = history.size();
-            for (int i = 0; i < 6; i++) {
-                int index = historySize - 1 - i;
-                if (index >= 0) {
-                    stepsArray[5 - i] = (float) history.get(index).getStepsCount();
-                } else {
-                    stepsArray[5 - i] = 0f;
-                }
-            }
-        }
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE", Locale.getDefault());
+        Calendar cal = Calendar.getInstance();
 
-        // 7 වෙනි Bar එකට (අද දවස) දැනට තියෙන Steps දානවා
         stepsArray[6] = (float) todaySteps;
+        days[6] = "Today";
+
+        for (int i = 0; i < 6; i++) {
+            int historyIndex = (history != null) ? history.size() - 1 - i : -1;
+            stepsArray[5 - i] = (historyIndex >= 0) ? (float) history.get(historyIndex).getStepsCount() : 0f;
+
+            Calendar labelCal = (Calendar) cal.clone();
+            labelCal.add(Calendar.DATE, -(i + 1));
+            days[5 - i] = sdf.format(labelCal.getTime());
+        }
 
         for (int i = 0; i < 7; i++) {
             entries.add(new BarEntry(i, stepsArray[i]));
         }
 
-        BarDataSet dataSet = new BarDataSet(entries, "Weekly Activity");
+        BarDataSet dataSet = new BarDataSet(entries, "Steps");
+
         dataSet.setColor(Color.parseColor("#57F4FA"));
+        dataSet.setHighLightColor(Color.WHITE);
         dataSet.setDrawValues(false);
 
         BarData barData = new BarData(dataSet);
-        barData.setBarWidth(0.5f);
+        barData.setBarWidth(0.4f);
 
         binding.stepChart.setData(barData);
-
-        // Chart එක refresh වෙන්න මේවා අනිවාර්යයි
-        binding.stepChart.notifyDataSetChanged();
-
-        // UI එක ලස්සනට තියාගන්න Configurations
+        binding.stepChart.setDrawBarShadow(false);
+        binding.stepChart.setDrawValueAboveBar(true);
         binding.stepChart.getDescription().setEnabled(false);
         binding.stepChart.getLegend().setEnabled(false);
-        binding.stepChart.getAxisRight().setEnabled(false);
-        binding.stepChart.getAxisLeft().setAxisMinimum(0f); // බින්දුවෙන් පටන් ගන්න
+        binding.stepChart.setDoubleTapToZoomEnabled(false);
+        binding.stepChart.animateY(1000);
 
         XAxis xAxis = binding.stepChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
+        xAxis.setTextColor(Color.GRAY);
         xAxis.setGranularity(1f);
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(days));
 
-        binding.stepChart.invalidate(); // Chart එක රී-ඩ්‍රෝ කරනවා
+        YAxis leftAxis = binding.stepChart.getAxisLeft();
+        leftAxis.setDrawGridLines(true);
+        leftAxis.setGridColor(Color.parseColor("#20FFFFFF"));
+        leftAxis.setTextColor(Color.GRAY);
+        leftAxis.setAxisMinimum(0f);
+        leftAxis.setLabelCount(5, false);
+
+        binding.stepChart.getAxisRight().setEnabled(false);
+        binding.stepChart.invalidate();
+
+        CustomMarkerView marker = new CustomMarkerView(getContext(), R.layout.layout_marker_view);
+        marker.setChartView(binding.stepChart);
+        binding.stepChart.setMarker(marker);
+
+        dataSet.setDrawValues(true);
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextSize(10);
+    }
+
+    private void showHealthTips() {
+        db.collection("tips")
+                .get()
+                .addOnSuccessListener(qds -> {
+                    if (!qds.isEmpty()) {
+                        List<Tip> tips = new ArrayList<>();
+                        for (QueryDocumentSnapshot ds : qds) {
+                            Tip tip = ds.toObject(Tip.class);
+                            if (ds != null) {
+                                tip.setId(ds.getId());
+                                tips.add(tip);
+                            }
+                        }
+
+                        int randomIndex = new Random().nextInt(tips.size());
+                        Tip selectedTip = tips.get(randomIndex);
+
+                        displayTip(selectedTip);
+
+                    } else {
+                        Toast.makeText(getContext(), "No tips found!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void displayTip(Tip tip) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("💡 " + tip.getTitle())
+                .setMessage(tip.getDescription())
+                .setPositiveButton("Got it!", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     @Override

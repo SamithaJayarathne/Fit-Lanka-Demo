@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -31,9 +32,7 @@ import com.neoviz.fit_lanka_demo.model.Feedback;
 import com.neoviz.fit_lanka_demo.model.Order;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class OrdersFragment extends Fragment {
     private FragmentOrdersBinding binding;
@@ -61,6 +60,7 @@ public class OrdersFragment extends Fragment {
     private void loadOrders() {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
+
         db.collection("orders")
                 .whereEqualTo("userId", uid)
                 .orderBy("orderDate", Query.Direction.DESCENDING)
@@ -69,13 +69,22 @@ public class OrdersFragment extends Fragment {
                     orderList.clear();
                     for (DocumentSnapshot doc : qds) {
                         Order o = doc.toObject(Order.class);
-                        if (o != null) orderList.add(o);
+                        if (o != null) {
+
+                            if (o.getReviewedProducts() != null && o.getOrderItems() != null) {
+                                for (Order.OrderItem item : o.getOrderItems()) {
+                                    if (o.getReviewedProducts().contains(item.getProductId())) {
+                                        item.setReviewed(true);
+                                    }
+                                }
+                            }
+                            orderList.add(o);
+                        }
                     }
                     adapter.notifyDataSetChanged();
-                }).addOnFailureListener(error->{
+                }).addOnFailureListener(error -> {
                     Log.e("FirestoreError", "Error loading orders: " + error.getMessage());
-                })
-        ;
+                });
     }
 
     private void showFeedbackSheet(Order.OrderItem item, String orderId) {
@@ -83,24 +92,43 @@ public class OrdersFragment extends Fragment {
         View v = getLayoutInflater().inflate(R.layout.layout_order_details_sheet, null);
         dialog.setContentView(v);
 
-        ((TextView) v.findViewById(R.id.tvSheetProductName)).setText(item.getProductName());
+        TextView tvName = v.findViewById(R.id.tvSheetProductName);
+        RatingBar rb = v.findViewById(R.id.ratingBar);
+        EditText etFeedback = v.findViewById(R.id.etFeedback);
+        Button btnAdd = v.findViewById(R.id.btnAddFeedback);
+
+        tvName.setText(item.getProductName());
+
+        if (item.isReviewed()) {
+            btnAdd.setEnabled(false);
+            btnAdd.setText("Feedback Already Submitted");
+            btnAdd.setAlpha(0.6f);
+            rb.setIsIndicator(true);
+            etFeedback.setEnabled(false);
+            etFeedback.setHint("Feedback already provided for this item.");
+        }
 
         v.findViewById(R.id.btnCallSeller).setOnClickListener(view -> {
             Intent i = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:0712345678"));
             startActivity(i);
         });
 
-        v.findViewById(R.id.btnAddFeedback).setOnClickListener(view -> {
-            float rating = ((RatingBar) v.findViewById(R.id.ratingBar)).getRating();
-            String feedback = ((EditText) v.findViewById(R.id.etFeedback)).getText().toString();
-            if (rating > 0) saveFeedback(item.getProductId(), rating, feedback, orderId, dialog);
-            else Toast.makeText(getContext(), "Add rating!", Toast.LENGTH_SHORT).show();
+        btnAdd.setOnClickListener(view -> {
+            float rating = rb.getRating();
+            String feedbackStr = etFeedback.getText().toString();
+            if (rating > 0) {
+                saveFeedback(item.getProductId(), rating, feedbackStr, orderId, item, dialog);
+            } else {
+                Toast.makeText(getContext(), "Please select a rating!", Toast.LENGTH_SHORT).show();
+            }
         });
         dialog.show();
     }
 
-    private void saveFeedback(String productId, float rating, String feedback, String orderId, BottomSheetDialog dialog) {
-        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    private void saveFeedback(String productId, float rating, String feedback, String orderId, Order.OrderItem item, BottomSheetDialog dialog) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
         Feedback feedbackObj = Feedback.builder()
                 .userId(user.getUid())
                 .userName(user.getDisplayName())
@@ -114,28 +142,30 @@ public class OrdersFragment extends Fragment {
                 .addOnSuccessListener(aVoid -> {
 
                     db.collection("orders").document(orderId)
-                            .update("status", "delivered")
+                            .update(
+                                    "status", "delivered",
+                                    "reviewedProducts", FieldValue.arrayUnion(productId)
+                            )
                             .addOnSuccessListener(unused -> {
-                                Toast.makeText(getContext(), "Review Submitted!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Thank you for your feedback!", Toast.LENGTH_SHORT).show();
 
-                                for (int i = 0; i < orderList.size(); i++) {
-                                    if (orderList.get(i).getOrderId().equals(orderId)) {
-                                        orderList.get(i).setStatus("delivered");
-                                        adapter.notifyItemChanged(i);
+                                item.setReviewed(true);
+                                for (Order o : orderList) {
+                                    if (o.getOrderId().equals(orderId)) {
+                                        o.setStatus("delivered");
                                         break;
                                     }
                                 }
-
+                                adapter.notifyDataSetChanged();
                                 dialog.dismiss();
                             })
                             .addOnFailureListener(e -> {
                                 Log.e("OrdersFragment", "Update fail: " + e.getMessage());
                                 dialog.dismiss();
                             });
-
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Review failed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Submission failed", Toast.LENGTH_SHORT).show();
                 });
     }
 }

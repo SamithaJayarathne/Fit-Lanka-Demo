@@ -36,20 +36,16 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
     public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
         Feedback feedback = reviewList.get(position);
 
-        // User ගේ නම (නම නැත්නම් "Verified Buyer" වගේ එකක් පෙන්වමු)
         if (feedback.getUserName() != null && !feedback.getUserName().isEmpty()) {
             holder.tvUserName.setText(feedback.getUserName());
         } else {
             holder.tvUserName.setText("Verified Buyer");
         }
 
-        // Rating එක (Float අගය කෙලින්ම set කරන්න පුළුවන්)
         holder.ratingBar.setRating(feedback.getRating());
 
-        // Review එක
         holder.tvReviewText.setText(feedback.getReview());
 
-        // දිනේ (Timestamp එක String එකක් විදිහට format කරලා)
         if (feedback.getTimestamp() != null) {
             String dateStr = dateFormat.format(feedback.getTimestamp().toDate());
             holder.tvReviewDate.setText(dateStr);

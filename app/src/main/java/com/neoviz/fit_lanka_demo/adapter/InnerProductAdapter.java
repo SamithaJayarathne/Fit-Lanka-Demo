@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.model.Order;
 import java.util.List;
@@ -35,19 +36,41 @@ public class InnerProductAdapter extends RecyclerView.Adapter<InnerProductAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
         Order.OrderItem item = items.get(pos);
+
         h.name.setText(item.getProductName());
-        h.qty.setText("Qty: " + item.getQuantity());
-        Glide.with(h.itemView.getContext()).load(item.getProductImage()).into(h.img);
-        h.itemView.setOnClickListener(v -> listener.onItemClick(item, orderId));
+
+        h.qty.setText("Quantity: " + item.getQuantity());
+
+        h.price.setText(String.format("LKR %,.2f", item.getUnitPrice()));
+
+        Glide.with(h.itemView.getContext())
+                .load(item.getProductImage())
+                .centerCrop()
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .placeholder(R.drawable.app_logo)
+                .into(h.img);
+
+        // Click Listener
+        h.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(item, orderId);
+            }
+        });
     }
 
-    @Override public int getItemCount() { return items.size(); }
+    @Override public int getItemCount() {
+        return items != null ? items.size() : 0;
+    }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView name, qty; ImageView img;
-        public ViewHolder(View v) { super(v);
+        TextView name, qty, price;
+        ImageView img;
+
+        public ViewHolder(View v) {
+            super(v);
             name = v.findViewById(R.id.tvInnerProductName);
             qty = v.findViewById(R.id.tvInnerProductQty);
+            price = v.findViewById(R.id.tvInnerProductPrice);
             img = v.findViewById(R.id.ivProductImage);
         }
     }

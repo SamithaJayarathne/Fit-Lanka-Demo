@@ -2,13 +2,15 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="180dp"
+    android:layout_width="175dp"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="1dp"
     app:strokeWidth="0dp"
-    app:rippleColor="@color/md_theme_primaryFixedDim">
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,67 +19,70 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="140dp">
-
+            android:layout_height="150dp">
             <ImageView
                 android:id="@+id/item_product_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:scaleType="centerInside"
+                android:padding="16dp"
                 android:src="@drawable/protein" />
-
+            <TextView
+                android:id="@+id/item_product_discount_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="10dp"
+                android:background="@drawable/bg_discount_badge"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="10% OFF"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold" />
         </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:id="@+id/item_product_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:minLines="2"
-                android:maxLines="2"
-                android:text="Product Name Here"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="@color/md_theme_onSurface" />
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="12dp">
 
             <TextView
                 android:id="@+id/item_product_category"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Category Name"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="@color/md_theme_outline" />
-
-            <TextView
-                android:id="@+id/item_product_discount_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Up to 10% off"
-                android:textColor="@color/md_theme_error"
-                android:textSize="11sp"
+                android:text="SUPPLEMENTS"
+                android:textSize="10sp"
+                android:letterSpacing="0.05"
+                android:alpha="0.6"
+                android:textColor="@color/md_theme_onSurface"
                 android:textStyle="bold" />
 
-            <RelativeLayout
+            <TextView
+                android:id="@+id/item_product_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:minLines="2"
+                android:maxLines="2"
+                android:text="Product Name Here"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/md_theme_onSurface" />
 
-                <TextView
-                    android:id="@+id/item_product_price"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:text="Rs. 2,500"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="@color/md_theme_primary"
-                    android:textStyle="bold" />
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/item_product_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Rs. 2,500.00"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_primary"
+                android:textStyle="bold" />
+
         </LinearLayout>
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

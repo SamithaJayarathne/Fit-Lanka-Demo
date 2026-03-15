@@ -70,6 +70,9 @@
         <item name="cornerSizeBottomLeft">32dp</item>
         <item name="cornerSizeBottomRight">32dp</item>
     </style>
+    <style name="ShapeAppearance.Material3.Corner.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">12dp</item>
+    </style>
 
 </resources>
 
