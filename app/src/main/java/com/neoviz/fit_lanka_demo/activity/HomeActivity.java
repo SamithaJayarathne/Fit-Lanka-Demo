@@ -2,11 +2,13 @@ package com.neoviz.fit_lanka_demo.activity;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +21,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -49,6 +52,7 @@ import com.neoviz.fit_lanka_demo.databinding.NavHeaderBinding;
 import com.neoviz.fit_lanka_demo.fragment.ChallengesFragment;
 import com.neoviz.fit_lanka_demo.fragment.HomeFragment;
 import com.neoviz.fit_lanka_demo.fragment.LeaderboardFragment;
+import com.neoviz.fit_lanka_demo.fragment.NotificationsFragment;
 import com.neoviz.fit_lanka_demo.fragment.ShopFragment;
 import com.neoviz.fit_lanka_demo.fragment.WorkoutFragment;
 import com.neoviz.fit_lanka_demo.model.User;
@@ -144,6 +148,10 @@ public class HomeActivity extends AppCompatActivity implements
                     getOnBackPressedDispatcher().onBackPressed();
                 }
             }
+        });
+
+        binding.toolbarNotification.setOnClickListener(view->{
+            loadFragment(new NotificationsFragment());
         });
 
     }
@@ -398,4 +406,5 @@ public class HomeActivity extends AppCompatActivity implements
         binding.bottomNavigationView.setVisibility(visibility);
         binding.appBarLayout.setVisibility(visibility);
     }
+
 }

@@ -20,7 +20,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildFeatures{
+    buildFeatures {
         viewBinding true
         buildConfig true
     }
@@ -91,4 +91,8 @@ dependencies {
     //retrofit
     implementation libs.retrofit
     implementation libs.converter.gson
+
+    //animation
+    implementation 'com.airbnb.android:lottie:6.0.0'
+
 }

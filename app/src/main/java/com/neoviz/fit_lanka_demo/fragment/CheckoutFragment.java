@@ -22,6 +22,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
+import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.activity.HomeActivity;
 import com.neoviz.fit_lanka_demo.activity.ProfileActivity;
 import com.neoviz.fit_lanka_demo.adapter.MinimalOrderAdapter;
@@ -61,6 +62,7 @@ public class CheckoutFragment extends Fragment {
     private int claimedCoins = 0;
     private boolean isCoinsClaimed = false;
     private boolean isDirectBuy = false;
+    private Order currentOrder;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -288,7 +290,7 @@ public class CheckoutFragment extends Fragment {
         }
 
         String orderId = firestore.collection("orders").document().getId();
-        Order finalOrder = Order.builder()
+        currentOrder = Order.builder()
                 .orderId(orderId).userId(firebaseAuth.getUid()).totalAmount(finalTotal)
                 .status("Pending").orderDate(com.google.firebase.Timestamp.now())
                 .paymentMethod(binding.rbCOD.isChecked() ? "Cash on Delivery" : "Card Payment")
@@ -296,9 +298,9 @@ public class CheckoutFragment extends Fragment {
                 .shippingAddress(convertToOrderAddress(shipRaw))
                 .orderItems(orderItemsList).build();
 
-        firestore.collection("orders").document(orderId).set(finalOrder)
+        firestore.collection("orders").document(orderId).set(currentOrder)
                 .addOnSuccessListener(aVoid -> {
-                    sendOrderConfirmationEmail(finalOrder);
+                    sendOrderConfirmationEmail(currentOrder);
                     clearCartAndFinish();
                 })
                 .addOnFailureListener(e -> binding.btnPlaceOrder.setEnabled(true));
@@ -323,21 +325,17 @@ public class CheckoutFragment extends Fragment {
 
     private void executeBatch(WriteBatch batch) {
         batch.commit().addOnSuccessListener(aVoid -> {
-            // Success Toast පෙන්වීම (Application context එක භාවිතයෙන්)
-            if (getActivity() != null) {
-                Toast.makeText(getActivity().getApplicationContext(), "Order Placed Successfully!", Toast.LENGTH_LONG).show();
-
-                // තත්පර 1.5ක් පරක්කු වී පිටවීම
-                new Handler().postDelayed(() -> {
-                    if (isAdded()) {
-                        requireActivity().getOnBackPressedDispatcher().onBackPressed();
-                    }
-                }, 1500);
+            if (isAdded() && getActivity() != null) {
+                navigateToSuccess(currentOrder);
             }
+        }).addOnFailureListener(e -> {
+            binding.btnPlaceOrder.setEnabled(true);
+            Toast.makeText(getContext(), "Failed to clear cart: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
 
     private void sendOrderConfirmationEmail(Order order) {
+
         EmailServiceApi emailApi = RetrofitClient.getInstance().create(EmailServiceApi.class);
         Map<String, Object> emailBody = new HashMap<>();
         emailBody.put("sender", Map.of("name", "Fit Lanka", "email", "samithaai2003@gmail.com"));
@@ -409,6 +407,18 @@ public class CheckoutFragment extends Fragment {
         return Order.Address.builder().name(currentUser.getName()).email(currentUser.getEmail())
                 .contactNo(currentUser.getContactNumber()).addressLine1(u.getAddressLine1())
                 .addressLine2(u.getAddressLine2()).city(u.getCity()).postalCode(u.getState()).build();
+    }
+
+    private void navigateToSuccess(Order order) {
+        SuccessFragment successFragment = new SuccessFragment();
+        Bundle args = new Bundle();
+        args.putString("orderId", order.getOrderId());
+        args.putDouble("total", order.getTotalAmount());
+        successFragment.setArguments(args);
+
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container_view, successFragment)
+                .commit();
     }
 
     @Override

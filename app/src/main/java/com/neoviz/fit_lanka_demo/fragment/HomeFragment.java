@@ -91,6 +91,7 @@ public class HomeFragment extends Fragment {
                     .addToBackStack(null)
                     .commit();
         });
+
     }
 
     private void checkPermissions() {

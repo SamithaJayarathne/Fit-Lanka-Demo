@@ -17,7 +17,7 @@
         android:orientation="horizontal">
 
         <View
-            android:id="@+id/viewTypeIndicator"
+            android:id="@+id/item_notification_type_icon"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="@drawable/challenges" />
@@ -30,7 +30,7 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/tvNotifTitle"
+                android:id="@+id/item_notification_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Challenge Completed!"
@@ -38,7 +38,7 @@
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/tvNotifMessage"
+                android:id="@+id/item_notification_message"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="You have successfully finished the 10k walk."
@@ -46,7 +46,7 @@
                 android:alpha="0.7" />
 
             <TextView
-                android:id="@+id/tvNotifTime"
+                android:id="@+id/item_notification_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2 hours ago"
@@ -56,7 +56,7 @@
         </LinearLayout>
 
         <View
-            android:id="@+id/unreadDot"
+            android:id="@+id/item_notification_unread_dot"
             android:layout_width="8dp"
             android:layout_height="8dp"
             android:background="@drawable/bg_notification_badge"
