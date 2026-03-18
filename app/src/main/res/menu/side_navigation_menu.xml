@@ -5,89 +5,69 @@
         android:id="@+id/side_nav_home"
         android:checkable="true"
         android:icon="@drawable/ic_home_outlined"
-        android:title="Home" />
-    <group>
-        <item
-            android:id="@+id/side_nav_profile"
-            android:checkable="true"
-            android:icon="@drawable/profile_24px"
-            android:title="My Profile" />
+        android:title="Dashboard" />
 
-        <item
-            android:id="@+id/side_nav_wallet"
-            android:checkable="true"
-            android:icon="@drawable/wallet_24px"
-            android:title="Wallet" />
+    <item android:title="Fitness">
+        <menu>
+            <item
+                android:id="@+id/side_nav_workout"
+                android:checkable="true"
+                android:icon="@drawable/ic_workout"
+                android:title="Start Workouts" />
+            <item
+                android:id="@+id/side_nav_leaderboard"
+                android:checkable="true"
+                android:icon="@drawable/ic_leaderboard_outlined"
+                android:title="Leaderboard" />
+            <item
+                android:id="@+id/side_nav_challenges"
+                android:checkable="true"
+                android:icon="@drawable/editor_choice_24px"
+                android:title="Daily Challenges" />
+        </menu>
+    </item>
 
-        <item
-            android:id="@+id/side_nav_workout_history"
-            android:checkable="true"
-            android:icon="@drawable/history_24px"
-            android:title="Workout History" />
+    <item android:title="Marketplace">
+        <menu>
+            <item
+                android:id="@+id/side_nav_shop"
+                android:checkable="true"
+                android:icon="@drawable/ic_market_outlined"
+                android:title="Browse Shop" />
+            <item
+                android:id="@+id/side_nav_orders"
+                android:checkable="true"
+                android:icon="@drawable/format_list_bulleted_24px"
+                android:title="My Orders" />
+            <item
+                android:id="@+id/side_nav_cart"
+                android:checkable="true"
+                android:icon="@drawable/shopping_cart_24px"
+                android:title="My Cart" />
+            <item
+                android:id="@+id/side_nav_wishlist"
+                android:checkable="true"
+                android:icon="@drawable/favorite_24px"
+                android:title="Wishlist" />
+        </menu>
+    </item>
 
-        <item
-            android:id="@+id/side_nav_achievements"
-            android:checkable="true"
-            android:icon="@drawable/trophy_24px"
-            android:title="Achievements" />
-    </group>
+    <item android:title="Personal">
+        <menu>
+            <item
+                android:id="@+id/side_nav_profile"
+                android:checkable="true"
+                android:icon="@drawable/profile_24px"
+                android:title="My Profile" />
+            <item
+                android:id="@+id/side_nav_support"
+                android:checkable="true"
+                android:icon="@drawable/support"
+                android:title="Contact Support" />
+        </menu>
+    </item>
 
-    <group>
-        <item
-            android:id="@+id/side_nav_orders"
-            android:checkable="true"
-            android:icon="@drawable/format_list_bulleted_24px"
-            android:title="My Orders" />
-
-        <item
-            android:id="@+id/side_nav_cart"
-            android:checkable="true"
-            android:icon="@drawable/shopping_cart_24px"
-            android:title="Cart" />
-
-        <item
-            android:id="@+id/side_nav_wishlist"
-            android:checkable="true"
-            android:icon="@drawable/favorite_24px"
-            android:title="Wishlist" />
-    </group>
-
-    <group>
-        <item
-            android:id="@+id/side_nav_leaderboard"
-            android:checkable="true"
-            android:icon="@drawable/ic_leaderboard_outlined"
-            android:title="Leaderboard" />
-        <item
-            android:id="@+id/side_nav_challenges"
-            android:checkable="true"
-            android:icon="@drawable/editor_choice_24px"
-            android:title="Challenges" />
-
-        <item
-            android:id="@+id/side_nav_settings"
-            android:checkable="true"
-            android:icon="@drawable/settings_24px"
-            android:title="Settings" />
-    </group>
-
-    <item
-        android:id="@+id/side_nav_workout"
-        android:checkable="true"
-        android:icon="@drawable/ic_workout"
-        android:title="Workouts" />
-    <item
-        android:id="@+id/side_nav_shop"
-        android:checkable="true"
-        android:icon="@drawable/ic_market_outlined"
-        android:title="Shop" />
-
-    <group>
-        <item
-            android:id="@+id/side_nav_login"
-            android:checkable="true"
-            android:icon="@drawable/login_24px"
-            android:title="Login" />
+    <group android:id="@+id/auth_group">
         <item
             android:id="@+id/side_nav_logout"
             android:checkable="true"

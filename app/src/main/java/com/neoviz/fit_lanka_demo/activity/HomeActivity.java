@@ -311,12 +311,6 @@ public class HomeActivity extends AppCompatActivity implements
 
             startActivity(intent);
 
-        } else if (itemId == R.id.side_nav_login) {
-            navigationView.setCheckedItem(R.id.side_nav_login);
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-            finish();
-
         } else if (itemId == R.id.side_nav_cart) {
             navigationView.setCheckedItem(R.id.side_nav_cart);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_shop).setChecked(true);
