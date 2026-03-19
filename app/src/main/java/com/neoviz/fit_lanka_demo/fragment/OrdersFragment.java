@@ -3,7 +3,6 @@ package com.neoviz.fit_lanka_demo.fragment;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,9 +50,11 @@ public class OrdersFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         adapter = new OrderHistoryAdapter(orderList, this::showFeedbackSheet);
         binding.rvOrders.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvOrders.setAdapter(adapter);
+
         loadOrders();
     }
 
@@ -66,11 +67,14 @@ public class OrdersFragment extends Fragment {
                 .orderBy("orderDate", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(qds -> {
+                    if (binding == null) return;
+
                     orderList.clear();
                     for (DocumentSnapshot doc : qds) {
                         Order o = doc.toObject(Order.class);
                         if (o != null) {
-
+                            o.setOrderId(doc.getId());
+                            // Reviewed status එක චෙක් කිරීම
                             if (o.getReviewedProducts() != null && o.getOrderItems() != null) {
                                 for (Order.OrderItem item : o.getOrderItems()) {
                                     if (o.getReviewedProducts().contains(item.getProductId())) {
@@ -82,8 +86,6 @@ public class OrdersFragment extends Fragment {
                         }
                     }
                     adapter.notifyDataSetChanged();
-                }).addOnFailureListener(error -> {
-                    Log.e("FirestoreError", "Error loading orders: " + error.getMessage());
                 });
     }
 
@@ -99,18 +101,16 @@ public class OrdersFragment extends Fragment {
 
         tvName.setText(item.getProductName());
 
+        // දැනටමත් Review කරලා නම් UI එක disable කරනවා
         if (item.isReviewed()) {
             btnAdd.setEnabled(false);
-            btnAdd.setText("Feedback Already Submitted");
-            btnAdd.setAlpha(0.6f);
+            btnAdd.setText("Already Reviewed");
             rb.setIsIndicator(true);
             etFeedback.setEnabled(false);
-            etFeedback.setHint("Feedback already provided for this item.");
         }
 
         v.findViewById(R.id.btnCallSeller).setOnClickListener(view -> {
-            Intent i = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:0712345678"));
-            startActivity(i);
+            startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:0712345678")));
         });
 
         btnAdd.setOnClickListener(view -> {
@@ -119,7 +119,7 @@ public class OrdersFragment extends Fragment {
             if (rating > 0) {
                 saveFeedback(item.getProductId(), rating, feedbackStr, orderId, item, dialog);
             } else {
-                Toast.makeText(getContext(), "Please select a rating!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please give a rating", Toast.LENGTH_SHORT).show();
             }
         });
         dialog.show();
@@ -139,33 +139,24 @@ public class OrdersFragment extends Fragment {
 
         db.collection("products").document(productId)
                 .collection("reviews").add(feedbackObj)
-                .addOnSuccessListener(aVoid -> {
-
+                .addOnSuccessListener(docRef -> {
+                    // 2. ඕඩර් එක අප්ඩේට් කරනවා
                     db.collection("orders").document(orderId)
-                            .update(
-                                    "status", "delivered",
-                                    "reviewedProducts", FieldValue.arrayUnion(productId)
-                            )
-                            .addOnSuccessListener(unused -> {
-                                Toast.makeText(getContext(), "Thank you for your feedback!", Toast.LENGTH_SHORT).show();
-
-                                item.setReviewed(true);
-                                for (Order o : orderList) {
-                                    if (o.getOrderId().equals(orderId)) {
-                                        o.setStatus("delivered");
-                                        break;
-                                    }
+                            .update("reviewedProducts", FieldValue.arrayUnion(productId))
+                            .addOnSuccessListener(aVoid -> {
+                                if (getContext() != null) {
+                                    Toast.makeText(getContext(), "Review Saved!", Toast.LENGTH_SHORT).show();
+                                    item.setReviewed(true); // මෙතනම ලිස්ට් එකේ අයිතමය අප්ඩේට් කරනවා
+                                    adapter.notifyDataSetChanged();
+                                    dialog.dismiss();
                                 }
-                                adapter.notifyDataSetChanged();
-                                dialog.dismiss();
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e("OrdersFragment", "Update fail: " + e.getMessage());
-                                dialog.dismiss();
                             });
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Submission failed", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }

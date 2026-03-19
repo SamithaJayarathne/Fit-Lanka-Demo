@@ -48,6 +48,29 @@ public class ProductListingAdapter extends RecyclerView.Adapter<ProductListingAd
             holder.productDiscountText.setVisibility(View.GONE);
         }
 
+        int stock = product.getStockQty();
+
+        if (stock <= 0) {
+            // බඩු ඉවරයි නම්
+            holder.soldOutOverlay.setVisibility(View.VISIBLE);
+            holder.lowStockAlert.setVisibility(View.GONE);
+            holder.itemView.setAlpha(0.6f); // Card එක ටිකක් ෆේඩ් කරනවා
+            holder.itemView.setEnabled(false); // Click කරන්න බැරි කරනවා
+        } else if (stock <= 5) {
+            // බඩු ටිකයි තියෙන්නේ නම් (Low Stock)
+            holder.soldOutOverlay.setVisibility(View.GONE);
+            holder.lowStockAlert.setVisibility(View.VISIBLE);
+            holder.lowStockAlert.setText("Only " + stock + " left! Hurry up");
+            holder.itemView.setAlpha(1.0f);
+            holder.itemView.setEnabled(true);
+        } else {
+            // බඩු ඕනෑ තරම් තියෙනවා නම්
+            holder.soldOutOverlay.setVisibility(View.GONE);
+            holder.lowStockAlert.setVisibility(View.GONE);
+            holder.itemView.setAlpha(1.0f);
+            holder.itemView.setEnabled(true);
+        }
+
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             Glide.with(holder.itemView.getContext())
                     .load(product.getImages().get(0))
@@ -71,6 +94,7 @@ public class ProductListingAdapter extends RecyclerView.Adapter<ProductListingAd
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView productImage;
         TextView productName, productCategory, productPrice, productDiscountText;
+        TextView soldOutOverlay, lowStockAlert;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -79,6 +103,8 @@ public class ProductListingAdapter extends RecyclerView.Adapter<ProductListingAd
             productCategory = itemView.findViewById(R.id.item_product_category);
             productPrice = itemView.findViewById(R.id.item_product_price);
             productDiscountText = itemView.findViewById(R.id.item_product_discount_text);
+            soldOutOverlay = itemView.findViewById(R.id.tvSoldOutOverlay);
+            lowStockAlert = itemView.findViewById(R.id.tvLowStockAlert);
         }
     }
 

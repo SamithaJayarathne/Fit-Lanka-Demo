@@ -3,6 +3,7 @@ package com.neoviz.fit_lanka_demo.fragment;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -149,34 +150,50 @@ public class ProductListFragment extends Fragment {
                 .orderBy("name", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(task -> {
+                    // 1. Fragment එක විනාශ වෙලා නම් (binding null නම්) ඉතිරි ටික කරන්න එපා
+                    if (binding == null) return;
+
                     List<Category> categories = task.toObjects(Category.class);
+                    // "All" category එක මුලට ඇඩ් කිරීම
                     categories.add(0, Category.builder().categoryId("All").name("All").build());
 
                     binding.categoryChipGroup.removeAllViews();
+
                     for (Category category : categories) {
+                        // 2. Context එක null ද කියලා බලන්න (Safe check)
+                        if (getContext() == null) continue;
+
                         Chip chip = new Chip(getContext());
                         chip.setText(category.getName());
                         chip.setTag(category.getCategoryId());
-                        chip.setCheckedIconResource(R.drawable.check);
-                        chip.setCheckedIconVisible(true);
                         chip.setCheckable(true);
                         chip.setClickable(true);
+
+                        // Icons setup (මෙහිදී icon එක drawable එකේ තියෙනවා නේද කියලා චෙක් කරගන්න)
+                        chip.setCheckedIconResource(R.drawable.check);
+                        chip.setCheckedIconVisible(true);
 
                         if (category.getName().equals("All")) {
                             chip.setChecked(true);
                         }
 
                         chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                            if (isChecked) {
-
-                                if (!binding.listingProductSearchInput.getText().toString().isEmpty()) {
+                            // 3. Chip එකක් click කරද්දීත් binding එක තියෙනවද කියලා බලන එක ආරක්ෂිතයි
+                            if (isChecked && binding != null) {
+                                String currentSearch = binding.listingProductSearchInput.getText().toString();
+                                if (!currentSearch.isEmpty()) {
                                     binding.listingProductSearchInput.setText("");
                                 }
                                 loadCategoryProducts(category.getCategoryId());
                             }
                         });
+
                         binding.categoryChipGroup.addView(chip);
                     }
+                })
+                .addOnFailureListener(e -> {
+                    // Error එකක් ආවොත් log එකක් දාමු
+                    Log.e("ProductListFragment", "Categories loading failed: " + e.getMessage());
                 });
     }
 

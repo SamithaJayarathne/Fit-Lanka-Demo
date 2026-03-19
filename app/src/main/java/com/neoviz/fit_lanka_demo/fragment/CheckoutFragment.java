@@ -309,14 +309,34 @@ public class CheckoutFragment extends Fragment {
     private void clearCartAndFinish() {
         String uid = firebaseAuth.getUid();
         WriteBatch batch = firestore.batch();
+
+        // 1. හැම Order Item එකකටම අදාළ Product එකේ Stock එක අඩු කිරීම
+        if (currentOrder != null && currentOrder.getOrderItems() != null) {
+            for (Order.OrderItem item : currentOrder.getOrderItems()) {
+                // "products" collection එකේ අදාළ productId එක තියෙන document එක update කරනවා
+                batch.update(firestore.collection("products").document(item.getProductId()),
+                        "stockQty", FieldValue.increment(-item.getQuantity()));
+            }
+        }
+
+        // 2. Claim කරපු FitCoins ප්‍රමාණය අඩු කිරීම
         if (isCoinsClaimed && claimedCoins > 0) {
             batch.update(firestore.collection("users").document(uid), "fitCoins", FieldValue.increment(-claimedCoins));
         }
+
+        // 3. Cart එක Clear කිරීම (Direct Buy එකක් නොවේ නම් පමණක්)
         if (!isDirectBuy) {
             firestore.collection("users").document(uid).collection("cart").get()
                     .addOnSuccessListener(query -> {
-                        for (DocumentSnapshot doc : query) batch.delete(doc.getReference());
+                        for (DocumentSnapshot doc : query) {
+                            batch.delete(doc.getReference());
+                        }
+                        // සියල්ල එකවරම Firestore එකට යැවීම
                         executeBatch(batch);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Checkout", "Error fetching cart for deletion: " + e.getMessage());
+                        executeBatch(batch); // Cart එක හොයාගන්න බැරි වුණත් ස්ටොක් අප්ඩේට් එකවත් වෙන්න ඕනේ නිසා
                     });
         } else {
             executeBatch(batch);
