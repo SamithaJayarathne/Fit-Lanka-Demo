@@ -19,6 +19,7 @@ mpandroidchart = "v3.1.0"
 firebaseAuth = "24.0.1"
 firebaseFirestore = "26.1.1"
 coreSplashscreen = "1.2.0"
+okhttp = "5.3.2"
 payhereAndroidSdk = "v3.0.18"
 placesVersion = "5.0.0"
 playServicesLocation = "21.3.0"
@@ -47,6 +48,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 payhere-android-sdk = { module = "com.github.PayHereDevs:payhere-android-sdk", version.ref = "payhereAndroidSdk" }
 places-v500 = { module = "com.google.android.libraries.places:places", version.ref = "placesVersion" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }

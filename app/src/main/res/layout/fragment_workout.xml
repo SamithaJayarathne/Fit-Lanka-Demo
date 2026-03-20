@@ -1,182 +1,299 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <com.google.android.gms.maps.MapView
-        android:id="@+id/workoutMapView"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/statsContainer"
-        android:layout_marginBottom="-35dp" />
+        android:layout_height="match_parent">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_alignBottom="@id/workoutMapView"
-        android:background="@drawable/bottom_gradient" />
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/workoutMapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/statsContainer"
+            android:layout_marginBottom="-35dp" />
 
-    <LinearLayout
-        android:id="@+id/statsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/active_workout_bg"
-        android:elevation="10dp"
-        android:orientation="vertical"
-        android:padding="25dp">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGetDirections"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_above="@id/statsContainer"
+            android:layout_marginBottom="20dp"
+            android:text="Get Directions"
+            android:visibility="gone"
+            app:icon="@drawable/route"
+            app:cornerRadius="20dp"
+            app:iconTint="@color/md_theme_onTertiaryContainer"
+            android:textColor="@color/md_theme_onTertiaryContainer"
+            android:backgroundTint="@color/md_theme_tertiaryContainer"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_alignBottom="@id/workoutMapView"
+            android:background="@drawable/bottom_gradient" />
 
         <LinearLayout
+            android:id="@+id/statsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="visible"
-            android:orientation="vertical">
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/active_workout_bg"
+            android:elevation="10dp"
+            android:orientation="vertical"
+            android:padding="25dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:letterSpacing="0.1"
-                    android:text="ACTIVE WORKOUT"
-                    android:textColor="?attr/colorPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:id="@+id/statsContainerArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/down_24px"
-                    android:backgroundTint="@color/md_theme_primary"
-                    android:layout_marginLeft="12dp"/>
-
-            </LinearLayout>
-
-
-
-            <LinearLayout
-                android:id="@+id/statsContainerDetails"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:weightSum="2">
+                android:orientation="vertical">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center">
 
                     <TextView
-                        android:id="@+id/tvWorkoutSteps"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="36sp"
+                        android:letterSpacing="0.1"
+                        android:text="ACTIVE WORKOUT"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <ImageView
+                        android:id="@+id/statsContainerArrow"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:alpha="0.6"
-                        android:text="STEPS"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="12sp" />
+                        android:src="@drawable/down_24px"
+                        app:tint="?attr/colorPrimary"
+                        android:layout_marginLeft="12dp"/>
                 </LinearLayout>
 
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/colorOutlineVariant" />
-
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/statsContainerDetails"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_marginTop="15dp"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:weightSum="3">
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:gravity="center"
-                        android:orientation="horizontal">
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvWorkoutSpeed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.6"
+                            android:text="KM/H"
+                            android:textSize="10sp" />
+                    </LinearLayout>
 
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/fit_coin" />
+                    <View android:layout_width="1dp" android:layout_height="30dp" android:background="?attr/colorOutlineVariant" />
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvWorkoutSteps"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.6"
+                            android:text="STEPS"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <View android:layout_width="1dp" android:layout_height="30dp" android:background="?attr/colorOutlineVariant" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
                         <TextView
                             android:id="@+id/tvEarnedCoins"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
                             android:text="0.00"
                             android:textColor="?attr/colorOnSurface"
-                            android:textSize="32sp"
+                            android:textSize="24sp"
                             android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.6"
+                            android:text="FIT COINS"
+                            android:textSize="10sp" />
                     </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:alpha="0.6"
-                        android:text="FIT COINS"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="25dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStartWorkout"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="START JOGGING"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="?attr/colorPrimary"
+                    app:cornerRadius="15dp"
+                    app:icon="@drawable/play_arrow_24px"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorOnPrimary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStopWorkout"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="FINISH SESSION"
+                    android:textColor="?attr/colorOnError"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="?attr/colorError"
+                    app:cornerRadius="15dp"
+                    app:icon="@drawable/stop_24px"
+                    app:iconGravity="textStart"
+                    app:iconTint="?attr/colorOnError" />
+            </FrameLayout>
         </LinearLayout>
+    </RelativeLayout>
 
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bottomSheetRoute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:behavior_hideable="true"
+        app:behavior_peekHeight="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+        app:cardElevation="16dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.BottomSheet.TopRounded">
 
-        <FrameLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="25dp">
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <View
+                android:layout_width="32dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:alpha="0.3"
+                android:background="?attr/colorOnSurface" />
+
+            <TextView
+                android:id="@+id/tvDestinationName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Destination"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Distance"
+                        android:alpha="0.7"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:id="@+id/tvRouteDistance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- km"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Time (Walking)"
+                        android:alpha="0.7"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:id="@+id/tvRouteDuration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-- mins"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStartWorkout"
+                android:id="@+id/btnCloseRoute"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="START JOGGING"
-                android:textColor="?attr/colorOnPrimary"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:backgroundTint="?attr/colorPrimary"
-                app:cornerRadius="15dp"
-                app:icon="@drawable/play_arrow_24px"
-                app:iconGravity="textStart"
-                app:iconTint="?attr/colorOnPrimary" />
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:text="CANCEL ROUTE"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                app:backgroundTint="?attr/colorSurfaceContainerLowest"
+                app:cornerRadius="16dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnStopWorkout"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="FINISH SESSION"
-                android:textColor="?attr/colorOnError"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                app:backgroundTint="?attr/colorError"
-                app:cornerRadius="15dp"
-                app:icon="@drawable/stop_24px"
-                app:iconGravity="textStart"
-                app:iconTint="?attr/colorOnError" />
-        </FrameLayout>
-    </LinearLayout>
-</RelativeLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

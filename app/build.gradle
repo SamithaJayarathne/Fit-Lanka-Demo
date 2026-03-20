@@ -92,6 +92,8 @@ dependencies {
     implementation libs.retrofit
     implementation libs.converter.gson
 
+    implementation libs.okhttp
+
     //animation
     implementation 'com.airbnb.android:lottie:6.0.0'
 

@@ -23,6 +23,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.neoviz.fit_lanka_demo.R;
 import com.neoviz.fit_lanka_demo.adapter.OrderHistoryAdapter;
@@ -39,6 +40,9 @@ public class OrdersFragment extends Fragment {
     private List<Order> orderList = new ArrayList<>();
     private OrderHistoryAdapter adapter;
 
+    // Performance සහ Memory Leaks වැළැක්වීමට Listener එකක් පාවිච්චි කරමු
+    private ListenerRegistration orderListener;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup cont, @Nullable Bundle b) {
@@ -51,9 +55,15 @@ public class OrdersFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Adapter එක Initialize කිරීම
         adapter = new OrderHistoryAdapter(orderList, this::showFeedbackSheet);
         binding.rvOrders.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvOrders.setAdapter(adapter);
+
+        // Data load වෙන්න කලින් ProgressBar එක පෙන්වමු
+        if (binding.progressBar != null) {
+            binding.progressBar.setVisibility(View.VISIBLE);
+        }
 
         loadOrders();
     }
@@ -62,34 +72,58 @@ public class OrdersFragment extends Fragment {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        db.collection("orders")
+        // get() වෙනුවට addSnapshotListener පාවිච්චි කිරීමෙන් Speed එක වැඩි වෙනවා
+        // limit(30) මගින් එකපාර දත්ත ගොඩක් load වීම නවතා RAM එක ඉතිරි කරනවා
+        orderListener = db.collection("orders")
                 .whereEqualTo("userId", uid)
                 .orderBy("orderDate", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(qds -> {
+                .limit(30)
+                .addSnapshotListener((qds, error) -> {
+
+                    // වැදගත්ම දේ: Fragment එක screen එකේ නැත්නම් හෝ error එකක් නම් නතර කරන්න
                     if (binding == null) return;
 
-                    orderList.clear();
-                    for (DocumentSnapshot doc : qds) {
-                        Order o = doc.toObject(Order.class);
-                        if (o != null) {
-                            o.setOrderId(doc.getId());
-                            // Reviewed status එක චෙක් කිරීම
-                            if (o.getReviewedProducts() != null && o.getOrderItems() != null) {
-                                for (Order.OrderItem item : o.getOrderItems()) {
-                                    if (o.getReviewedProducts().contains(item.getProductId())) {
-                                        item.setReviewed(true);
+                    if (error != null) {
+                        if (binding.progressBar != null) binding.progressBar.setVisibility(View.GONE);
+                        Toast.makeText(getContext(), "Error loading orders", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (qds != null) {
+                        orderList.clear();
+                        for (DocumentSnapshot doc : qds) {
+                            Order o = doc.toObject(Order.class);
+                            if (o != null) {
+                                o.setOrderId(doc.getId());
+                                if (o.getReviewedProducts() != null && o.getOrderItems() != null) {
+                                    for (Order.OrderItem item : o.getOrderItems()) {
+                                        if (o.getReviewedProducts().contains(item.getProductId())) {
+                                            item.setReviewed(true);
+                                        }
                                     }
                                 }
+                                orderList.add(o);
                             }
-                            orderList.add(o);
+                        }
+                        adapter.notifyDataSetChanged();
+
+                        // UI එකේ පෙනුම පාලනය කිරීම
+                        if (binding.progressBar != null) binding.progressBar.setVisibility(View.GONE);
+
+                        if (orderList.isEmpty()) {
+                            binding.rvOrders.setVisibility(View.GONE);
+                            if (binding.tvNoOrders != null) binding.tvNoOrders.setVisibility(View.VISIBLE);
+                        } else {
+                            binding.rvOrders.setVisibility(View.VISIBLE);
+                            if (binding.tvNoOrders != null) binding.tvNoOrders.setVisibility(View.GONE);
                         }
                     }
-                    adapter.notifyDataSetChanged();
                 });
     }
 
     private void showFeedbackSheet(Order.OrderItem item, String orderId) {
+        if (getContext() == null) return;
+
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View v = getLayoutInflater().inflate(R.layout.layout_order_details_sheet, null);
         dialog.setContentView(v);
@@ -101,7 +135,6 @@ public class OrdersFragment extends Fragment {
 
         tvName.setText(item.getProductName());
 
-        // දැනටමත් Review කරලා නම් UI එක disable කරනවා
         if (item.isReviewed()) {
             btnAdd.setEnabled(false);
             btnAdd.setText("Already Reviewed");
@@ -137,25 +170,34 @@ public class OrdersFragment extends Fragment {
                 .timestamp(com.google.firebase.Timestamp.now())
                 .build();
 
+        // Feedbacks save කිරීමේදී Firestore calls chain කිරීම
         db.collection("products").document(productId)
                 .collection("reviews").add(feedbackObj)
                 .addOnSuccessListener(docRef -> {
-                    // 2. ඕඩර් එක අප්ඩේට් කරනවා
                     db.collection("orders").document(orderId)
                             .update("reviewedProducts", FieldValue.arrayUnion(productId))
                             .addOnSuccessListener(aVoid -> {
-                                if (getContext() != null) {
-                                    Toast.makeText(getContext(), "Review Saved!", Toast.LENGTH_SHORT).show();
-                                    item.setReviewed(true); // මෙතනම ලිස්ට් එකේ අයිතමය අප්ඩේට් කරනවා
+                                // Fragment එක තවමත් පවතිනවාදැයි පරීක්ෂා කිරීම (Safety first)
+                                if (isAdded() && binding != null) {
+                                    Toast.makeText(requireContext(), "Review Saved!", Toast.LENGTH_SHORT).show();
+                                    item.setReviewed(true);
                                     adapter.notifyDataSetChanged();
                                     dialog.dismiss();
                                 }
                             });
+                })
+                .addOnFailureListener(e -> {
+                    if (isAdded()) Toast.makeText(requireContext(), "Failed to save review", Toast.LENGTH_SHORT).show();
                 });
     }
 
     @Override
     public void onDestroyView() {
+        // 🛑 ඉතාමත් වැදගත්: Fragment එකෙන් අයින් වෙද්දී listener එක අනිවාර්යයෙන්ම remove කරන්න.
+        // මෙය නොකළහොත් වෙනත් Fragment එකකදීත් මෙය background එකේ දුවමින් App එක හිර කරයි.
+        if (orderListener != null) {
+            orderListener.remove();
+        }
         super.onDestroyView();
         binding = null;
     }
